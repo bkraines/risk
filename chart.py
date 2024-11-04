@@ -1,0 +1,88 @@
+import plotly.express as px
+from plotly.graph_objs import Figure
+import xarray as xr
+from typing import Union, List
+
+def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotations: bool = False) -> Figure:
+    if not x_title:
+        fig.update_xaxes(title_text=None)
+    if not y_title:
+        fig.update_yaxes(title_text=None)
+    if not annotations:
+        fig.for_each_annotation(lambda a: a.update(text=''))
+    return fig
+
+def px_line(da: xr.DataArray, x: str, y: str, color: Union[str, None] = None, title: Union[str, None] = None, 
+            x_title: bool = False, y_title: bool = False, fig_format: Union[dict, None] = None) -> Figure:
+    fig_format_default = {'template': 'plotly_white', 'height': 500, 'width': 1000}
+    fig_format = {**fig_format_default, **(fig_format or {})}
+    df = da.to_series().reset_index()
+    fig = px.line(df, x=x, y=y, color=color, title=title, **fig_format)
+    fig = px_format(fig, x_title=x_title, y_title=y_title)
+    
+    return fig
+
+def draw_volatility(vol: xr.DataArray, asset: str, vol_type: List[int]) -> Figure:
+    """
+    Draws a line plot of the volatility for a given asset and volatility type.
+
+    Parameters
+    ----------
+    vol : xr.DataArray
+        A DataArray containing the volatility data with dimensions including 'date', 'asset', and 'vol_type'.
+    asset : str
+        The name of the asset for which the volatility plot is to be drawn.
+    vol_type : List[int]
+        A list of integers representing the types of volatility to be plotted.
+
+    Returns
+    -------
+    fig : Figure
+        A plotly Figure object representing the volatility line plot.
+
+    Notes
+    -----
+    The function selects the data for the specified asset and volatility types, drops any NaN values along the 'date' dimension, 
+    and then creates a line plot using plotly express.
+    """
+    fig_sel = {'asset': asset,
+               'vol_type': vol_type,
+               }
+    ds = vol.sel(**fig_sel).dropna(dim='date')
+    fig = px_line(ds, x='date', y='vol', color='vol_type', title=f'Volatility of {asset}')
+    return fig
+
+def draw_correlation(corr: xr.DataArray, asset: str, asset_1: str, corr_type: List[int]) -> Figure:
+    """
+    Draws a correlation plot between two assets over time.
+
+    Parameters
+    ----------
+    corr : xr.DataArray
+        A DataArray containing correlation data with dimensions including 'date', 'asset', 'asset_1', and 'corr_type'.
+    asset : str
+        The name of the first asset.
+    asset_1 : str
+        The name of the second asset.
+    corr_type : List[int]
+        A list of correlation types to be plotted.
+
+    Returns
+    -------
+    fig : Figure
+        A plotly Figure object representing the correlation plot.
+
+    Examples
+    --------
+    >>> corr = xr.DataArray(...)
+    >>> fig = draw_correlation(corr, 'Asset_A', 'Asset_B', [1, 2, 3])
+    >>> fig.show()
+    """
+    fig_sel = {'asset':     asset,
+               'asset_1':   asset_1,
+               'corr_type': corr_type,
+               }
+    ds = corr.sel(**fig_sel).dropna(dim='date')
+    fig = px_line(ds, x='date', y='corr', color='corr_type', title=f'Correlation of {asset} and {asset_1}')
+    return fig
+    import plotly.express as px
