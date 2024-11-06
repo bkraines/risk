@@ -33,7 +33,10 @@ def get_correlation_set(ret: xr.DataArray, halflifes: List[int]) -> xr.DataArray
 
 
 # def get_factor_data(asset_list: List[str], halflifes: List[int]) -> xr.Dataset:
-def get_factor_data(halflifes: List[int]) -> xr.Dataset:
+def get_factor_data(halflifes: List[int] = None) -> xr.Dataset:
+    if halflifes == None:
+        halflifes = [21, 63, 126, 252, 512]
+    
     factor_master = get_factor_master()
     asset_list = factor_master.index.to_list()
     
