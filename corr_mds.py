@@ -10,7 +10,18 @@ from sklearn.manifold import MDS
 import plotly.express as px
 import plotly.io as pio
 # pio.renderers.default='png'
-from plotly.graph_objs import Figure
+import plotly.graph_objects as go
+# from plotly.graph_objs import Figure
+
+
+def prepare_correlation(corr: xr.DataArray, transformation=None, start_date=None) -> pd.DataFrame:
+    factor_master = pd.DataFrame(corr.asset.attrs).T
+    return (mds_ts_df(corr, 
+                      transformation=transformation, 
+                      start_date=start_date)
+            .reset_index()
+            .join(factor_master, on='asset')
+            .assign(date = lambda df: df['date'].astype(str)))
 
 
 def transform_coordinates(coordinates: pd.DataFrame, transformation_type=None, factor: str = 'SPY'):
@@ -72,6 +83,7 @@ def multidimensional_scaling(correlation_matrix: pd.DataFrame, init=None) -> pd.
 
 def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor='SPY') -> pd.DataFrame:
     # TODO: Factor out corr_type
+
     dates = corr.sel(date=slice(start_date, None)).date.values
     coordinates = None
     
@@ -86,7 +98,7 @@ def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor
             )
 
 
-def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']] = 'auto') -> Figure:
+def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']] = 'auto') -> go.Figure:
     """
     Draws a scatter plot of MDS (Multidimensional Scaling) time series data using Plotly.
     Parameters
@@ -119,14 +131,21 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     fig_animation = {'animation_frame': 'date', 'animation_group': 'asset'}  if 'date' in df.columns else {}
     fig_format    = {'template': 'plotly_white', 'height': 750, 'width': 750}
     
-    
     fig = (px.scatter(df, 
                       x='dim1', y='dim2', text='asset', color='asset_class', 
                       **fig_animation,
                       **fig_format)
-           .update_traces(textposition='middle right', textfont=dict(color='lightgray'))
-           .update_xaxes(title=None)
-           .update_yaxes(title=None)
+           .update_traces(textposition='middle right', 
+                          textfont_color='lightgray')
+           .update_layout(xaxis_title=None,
+                          yaxis_title=None,
+                          xaxis_showticklabels=False,
+                          yaxis_showticklabels=False,
+                        #   xaxis_showgrid=False,
+                        #   yaxis_showgrid=False,
+                        #   xaxis_showline=True,
+                        #   yaxis_showline=True,
+                          legend_title_text=None)
            )
     
     if tick_range is not None:
@@ -135,4 +154,19 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
         print(tick_range)
         fig.update_xaxes(range=(-tick_range, tick_range)).update_yaxes(range=(-tick_range, tick_range))
         
+    return fig
+
+
+def add_whiskers(fig, df, t0, t1):
+    df0 = df.set_index('date').xs(t0)
+    df1 = df.set_index('date').xs(t1)
+    for i in range(len(df0)):
+        fig.add_trace(go.Scatter(x=[df0['dim1'].iloc[i], 
+                                    df1['dim1'].iloc[i]], 
+                                 y=[df0['dim2'].iloc[i], 
+                                    df1['dim2'].iloc[i]], 
+                                 mode='lines', 
+                                 line_color='lightgray', 
+                                 line_width=1, 
+                                 showlegend=False))
     return fig
