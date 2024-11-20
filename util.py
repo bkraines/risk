@@ -1,5 +1,10 @@
+import pandas as pd
 import xarray as xr
 
+
+def safe_reindex(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+    assert df1.index.isin(df2.index).all()
+    return df1.reindex(df2.index)
 
 def xr_pct_change(da: xr.DataArray, dim: str, periods: int = 1) -> xr.DataArray:
     """
