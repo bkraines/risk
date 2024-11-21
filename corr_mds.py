@@ -100,7 +100,9 @@ def multidimensional_scaling(correlation_matrix: pd.DataFrame, init=None, random
     dissimilarity_matrix = sqrt(1 - correlation_matrix**2)
 
     # Pass n_init explicitly to suppress warning when init is not None:
-    n_init = 100 # if init is None else 1 
+    # if n_init is None:
+    #     n_init =
+    # n_init = 100  if init is not None else 1 
     embedding = MDS(dissimilarity='precomputed', random_state=random_state, n_init=n_init)
     coordinates = embedding.fit_transform(dissimilarity_matrix, init=init)
     
@@ -139,8 +141,9 @@ def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor
     mds_dict = {}
     for date in dates:
         df = corr.sel(date=date, corr_type=63).to_pandas() # * 0 + np.identity(len(corr.asset))
-        coordinates = multidimensional_scaling(df, init=transformed_initial) #init=transformed) 
-        transformed = transform_coordinates(coordinates, transformation, factor=factor, factor_list=None, coordinates_initial=transformed_initial)
+        coordinates = multidimensional_scaling(df, init=transformed_initial, n_init=1) #init=transformed) 
+        transformed = transform_coordinates(coordinates, transformation, factor=factor, 
+                                            factor_list=None, coordinates_initial=transformed_initial)
         mds_dict[date] = transformed
     return (pd.concat(mds_dict)
             .rename_axis(index=['date', df.index.name])
@@ -186,12 +189,13 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     
     fig = (px.scatter(df, 
                       x='dim1', y='dim2', text='asset', color='asset_class', 
+                      color_discrete_map={'Portfolio': 'black', 'Theme': 'darkred'},
                       **args_size,
                       **args_animation,
                       **args_format)
            .update_traces(textposition='middle right', 
-                          textfont_color='lightgray',
-                        #   textfont_color=args_textcolor,
+                        #   textfont_color='lightgray',
+                          textfont_color=args_textcolor,
                           )
            .update_layout(xaxis_title=None,
                           yaxis_title=None,

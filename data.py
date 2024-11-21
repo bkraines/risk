@@ -37,7 +37,7 @@ def get_factor_master(filename: str = 'factor_master.xlsx', sheet_name: str = 'r
     return df
 
 
-def get_portfolios(filename: str = 'portfolios.xlsx', sheet_name: str = 'read', index_col: str = 'portfolio_name') -> pd.DataFrame:
+def get_portfolios(filename: str = 'factor_master.xlsx', sheet_name: str = 'read_composites', index_col: str = 'portfolio_name') -> pd.DataFrame:
     df = pd.read_excel(filename, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index.unique(), ordered=True)
     return (df.reset_index()
