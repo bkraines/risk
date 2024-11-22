@@ -218,7 +218,7 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
                           legend_title_text=None)
            )
     
-    fig.for_each_trace(lambda t: t.update(textfont_color=t.marker.color)) #, textposition='top center'))
+    # fig.for_each_trace(lambda t: t.update(textfont_color=t.marker.color)) #, textposition='top center'))
 
     
     # fig.update_layout(yaxis_tickvals = fig)
