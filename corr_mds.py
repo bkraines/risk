@@ -150,8 +150,6 @@ def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor
             )
 
 
-
-
 def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']] = 'auto') -> go.Figure:
     """
     Draws a scatter plot of MDS (Multidimensional Scaling) time series data using Plotly.
@@ -185,17 +183,26 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     args_animation = {'animation_frame': 'date', 'animation_group': 'asset'}  if 'date' in df.columns else {}
     args_format    = {'template': 'plotly_white', 'height': 750, 'width': 750}
     args_size      = {'size': 'size', 'size_max': 10} if 'size' in df.columns else {}
-    args_textcolor = ['black' if condition else 'lightgray' for condition in (df['asset']=='SPY')]
+    # args_textcolor = ['black' if condition else 'lightgray' for condition in (df['asset']=='SPY')]
+    # args_textcolor = ['black' if asset == 'SPY' else 'lightgray' for asset in df['asset']]
+    df['textcolor'] = ['black' if asset == 'SPY' else 'lightgray' for asset in df['asset']]
+    
+    
+    asset_class_list = df.asset_class.unique()
+    color_sequence = pio.templates['plotly_white']['layout']['colorway']
+    color_dict = {a: b for a, b in zip(asset_class_list, color_sequence)}
+    color_dict['Portfolio'] = 'black'
+    color_dict['Theme'] = 'red'
     
     fig = (px.scatter(df, 
                       x='dim1', y='dim2', text='asset', color='asset_class', 
-                      color_discrete_map={'Portfolio': 'black', 'Theme': 'darkred'},
+                      color_discrete_map=color_dict,
                       **args_size,
                       **args_animation,
                       **args_format)
            .update_traces(textposition='middle right', 
                         #   textfont_color='lightgray',
-                          textfont_color=args_textcolor,
+                        #   textfont_color=df['textcolor'], #args_textcolor,
                           )
            .update_layout(xaxis_title=None,
                           yaxis_title=None,
@@ -210,6 +217,9 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
                           yaxis_tickvals = [-0.5, 0, 0.5],
                           legend_title_text=None)
            )
+    
+    fig.for_each_trace(lambda t: t.update(textfont_color=t.marker.color)) #, textposition='top center'))
+
     
     # fig.update_layout(yaxis_tickvals = fig)
     
@@ -234,4 +244,7 @@ def add_whiskers(fig, df, t0, t1):
                                  line_color='lightgray', 
                                  line_width=1, 
                                  showlegend=False))
+        
+        # Move whiskers underneath existing traces
+        fig.data = tuple([fig.data[-1]] + list(fig.data[:-1]))
     return fig
