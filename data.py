@@ -67,7 +67,7 @@ def get_factor_data(halflifes: Optional[List[int]] = None) -> xr.Dataset:
     return ds
 
 
-def align_indices(df1: pd.DataFrame, df2: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+def align_indices(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Align the indices of two DataFrames to ensure they can be joined without errors.
     
