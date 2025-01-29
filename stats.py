@@ -25,12 +25,12 @@ def align_dates(df, business_day_factors):
             .loc[dates_business])
 
 
-def calculate_returns(cret, diffusion_type, multiplier=1e-4):
+def calculate_returns(cret, periods=1, diffusion_type=None, multiplier=1e-4):
     match diffusion_type:
         case 'lognormal':
-            return cret.pct_change().div(multiplier)
+            return cret.pct_change(periods).div(multiplier)
         case 'normal':
-            return cret.diff().div(multiplier)
+            return cret.diff(periods).div(multiplier)
         # case 'normal10':
         #     return cret.diff().div(10)
         case _:
@@ -39,8 +39,11 @@ def calculate_returns(cret, diffusion_type, multiplier=1e-4):
         #     raise ValueError(f'No diffusion_type provided for {cret.name}')
 
 
-def calculate_returns_set(df, diffusion_map, multiplier_map):
-    return (pd.DataFrame({factor: calculate_returns(df[factor], diffusion_map[factor], multiplier_map[factor]) 
+def calculate_returns_set(df, periods, diffusion_map=None, multiplier_map=None):
+    return (pd.DataFrame({factor: calculate_returns(df[factor], 
+                                                    periods, 
+                                                    diffusion_map[factor], 
+                                                    multiplier_map[factor]) 
                           for factor in df.columns
                           })
             .rename_axis(index='date', columns='factor_name'))
@@ -73,6 +76,15 @@ def accumulate_returns_set(ret, diffusion_map, level_map=None, multiplier_map=No
                           })
             .rename_axis(index='date', columns='factor_name'))
 
+
+def total_return(cret, date_start, date_end, diffusion_map=None, multiplier_map=None):
+    if diffusion_map is None and multiplier_map is None and cret.factor_name.attrs is not None:
+        factor_master  = pd.DataFrame(cret.factor_name.attrs).T
+        diffusion_map  = factor_master['diffusion_type']
+        multiplier_map = factor_master['multiplier']
+    cret_interval = cret.sel(date=slice(date_start, date_end)).isel(date=[0, -1]).to_pandas()
+    periods=1
+    return calculate_returns_set(cret_interval, periods, diffusion_map, multiplier_map).iloc[-1]
 
 
 # deprecate

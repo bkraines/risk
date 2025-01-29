@@ -119,6 +119,9 @@ def build_factor_data2(halflifes: List[int]) -> xr.Dataset:
     # TODO: Check vol units
     factor_master = get_factor_master('factor_master.xlsx', 'read')
     factor_list = factor_master.index
+    diffusion_map = factor_master['diffusion_type']
+    multiplier_map = factor_master['multiplier']
+
 
     factor_list_yf = factor_master.query('source=="yfinance"').index
     levels_yf = (get_yahoo_data_set(asset_names = factor_list_yf.tolist(), 
@@ -127,9 +130,10 @@ def build_factor_data2(halflifes: List[int]) -> xr.Dataset:
                  .pipe(align_dates, ['SPY'])
                  )
 
-    diffusion_map = factor_master['diffusion_type']
-    multiplier_map = factor_master['multiplier']
-    ret_yf = calculate_returns_set(levels_yf, diffusion_map, multiplier_map)
+    ret_yf = calculate_returns_set(levels_yf, 
+                                   periods=1,
+                                   diffusion_map=diffusion_map, 
+                                   multiplier_map=multiplier_map)
     
     portfolios_weights = (get_portfolios()
                           .pipe(safe_reindex, factor_master)
