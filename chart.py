@@ -1,7 +1,10 @@
+from typing import Union, List
+
 import plotly.express as px
 from plotly.graph_objs import Figure
+
 import xarray as xr
-from typing import Union, List
+
 
 def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotations: bool = False) -> Figure:
     if not x_title:
@@ -10,7 +13,9 @@ def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotat
         fig.update_yaxes(title_text=None)
     if not annotations:
         fig.for_each_annotation(lambda a: a.update(text=''))
+        
     return fig
+
 
 def px_line(da: xr.DataArray, x: str, y: str, color: Union[str, None] = None, title: Union[str, None] = None, 
             x_title: bool = False, y_title: bool = False, fig_format: Union[dict, None] = None) -> Figure:
@@ -22,7 +27,8 @@ def px_line(da: xr.DataArray, x: str, y: str, color: Union[str, None] = None, ti
     
     return fig
 
-def draw_volatility(vol: xr.DataArray, asset: str, vol_type: List[int]) -> Figure:
+
+def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: List[int]) -> Figure:
     """
     Draws a line plot of the volatility for a given asset and volatility type.
 
@@ -45,14 +51,15 @@ def draw_volatility(vol: xr.DataArray, asset: str, vol_type: List[int]) -> Figur
     The function selects the data for the specified asset and volatility types, drops any NaN values along the 'date' dimension, 
     and then creates a line plot using plotly express.
     """
-    fig_sel = {'asset': asset,
+    fig_sel = {'factor_name': factor_name,
                'vol_type': vol_type,
                }
     ds = vol.sel(**fig_sel).dropna(dim='date')
-    fig = px_line(ds, x='date', y='vol', color='vol_type', title=f'Volatility of {asset}')
+    fig = px_line(ds, x='date', y='vol', color='vol_type', title=f'Volatility of {factor_name}')
     return fig
 
-def draw_correlation(corr: xr.DataArray, asset: str, asset_1: str, corr_type: List[int]) -> Figure:
+
+def draw_correlation(corr: xr.DataArray, factor_name: str, factor_name_1: str, corr_type: List[int]) -> Figure:
     """
     Draws a correlation plot between two assets over time.
 
@@ -78,11 +85,11 @@ def draw_correlation(corr: xr.DataArray, asset: str, asset_1: str, corr_type: Li
     >>> fig = draw_correlation(corr, 'Asset_A', 'Asset_B', [1, 2, 3])
     >>> fig.show()
     """
-    fig_sel = {'asset':     asset,
-               'asset_1':   asset_1,
+    fig_sel = {'factor_name': factor_name,
+               'factor_name_1': factor_name_1,
                'corr_type': corr_type,
                }
     ds = corr.sel(**fig_sel).dropna(dim='date')
-    fig = px_line(ds, x='date', y='corr', color='corr_type', title=f'Correlation of {asset} and {asset_1}')
+    fig = px_line(ds, x='date', y='corr', color='corr_type', title=f'Correlation of {factor_name} and {factor_name_1}')
     return fig
-    import plotly.express as px
+    
