@@ -43,3 +43,7 @@ def xr_pct_change(da: xr.DataArray, dim: str, periods: int = 1) -> xr.DataArray:
     pct_change = (da - shifted) / shifted
     # pct_change = pct_change.where(~isinf(pct_change))  # Handle division by zero cases
     return pct_change
+
+
+def format_date(date_str):
+    return pd.to_datetime(date_str).strftime('%m/%d')
