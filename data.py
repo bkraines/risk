@@ -13,7 +13,7 @@ from stats import align_dates, calculate_returns_set, accumulate_returns_set, ge
 def get_yahoo_data(ticker, field_name, cache=None):
     # TODO: Check cache first
     # cache.columns.get_level_values(1)
-    return yf.download(ticker)[field_name]
+    return yf.download(ticker, auto_adjust=False)[field_name].squeeze()
 
 
 def get_yahoo_data_set(tickers, field_name, asset_names=None):
@@ -27,7 +27,7 @@ def get_yahoo_data_set(tickers, field_name, asset_names=None):
 # deprecated
 def get_yf_data(asset_list: List[str]) -> xr.DataArray:
     # TODO: Name the returned datarray 'ohlcv'?
-    df = (yf.download(asset_list)
+    df = (yf.download(asset_list, auto_adjust=False)
             .rename_axis(index='date', columns=['ohlcv_type', 'asset'])
             .rename(index={'Ticker': 'asset'})
             .rename(columns=lambda col: col.lower(), level='ohlcv_type')
@@ -115,13 +115,12 @@ def build_dataset_with_composites(halflifes: List[int]) -> xr.Dataset:
     return factor_data
 
 
-def build_factor_data2(halflifes: List[int]) -> xr.Dataset:
+def build_factor_data2(halflifes: List[int], factor_set='read') -> xr.Dataset:
     # TODO: Check vol units
-    factor_master = get_factor_master('factor_master.xlsx', 'read')
+    factor_master = get_factor_master('factor_master.xlsx', factor_set)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
     multiplier_map = factor_master['multiplier']
-
 
     factor_list_yf = factor_master.query('source=="yfinance"').index
     levels_yf = (get_yahoo_data_set(asset_names = factor_list_yf.tolist(), 
