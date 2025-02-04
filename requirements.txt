@@ -7,6 +7,7 @@ xarray
 numbagg   # for xarray rolling_exp
 matplotlib
 plotly
-kaleido==0.1.0.post1 # for plotly png (downgraded for bug fix)
+kaleido==0.1.* # for plotly png (downgraded for bug fix)
 nbformat  # for plotly notebook
 yfinance
+streamlit
