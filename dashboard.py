@@ -30,21 +30,9 @@ import plotly.express as px
 import pandas as pd
 import yfinance as yf
 
-# Download SPY data
-spy_data = yf.download('SPY', start='2020-01-01', end='2023-01-01')
-
-# Create line chart
-fig = px.line(
-    spy_data, 
-    x=spy_data.index, 
-    y='Close', 
-    title='SPY Closing Prices (2020-2022)',
-    labels={'Close': 'Closing Price', 'index': 'Date'}
-)
-
-# Show plot
-# fig.show()
-st.write(fig)
+data = yf.download('SPY', start='2020-01-01', end='2023-01-01')['Close']
+fig = px.line(data)
+fig.show()
 
 
 
