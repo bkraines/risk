@@ -1,6 +1,35 @@
 import streamlit as st
 
-st.write('hello world ttt')
+import plotly.express as px
+import pandas as pd
+import numpy as np
+
+# Generate sample data
+np.random.seed(42)
+data = {
+    'x': np.random.randn(50),
+    'y': np.random.randn(50),
+    'category': np.random.choice(['A', 'B', 'C'], size=50)
+}
+df = pd.DataFrame(data)
+
+# Create scatter plot
+fig = px.scatter(
+    df, 
+    x='x', 
+    y='y', 
+    color='category', 
+    title='Sample Scatter Plot with Plotly',
+    labels={'x': 'X Axis', 'y': 'Y Axis'}
+)
+
+# Show plot
+# fig.show()
+st.write(fig)
+
+
+
+# st.write('hello world ttt')
 
 # from util import format_date
 # from data import build_factor_data2
