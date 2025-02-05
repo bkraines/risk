@@ -1,25 +1,27 @@
 import streamlit as st
 
-from util import format_date
-from data import build_factor_data2
-from market_feedback import draw_market_feedback_scatter
+st.write('hello world ttt')
 
-halflifes = [21, 63, 126, 252]
+# from util import format_date
+# from data import build_factor_data2
+# from market_feedback import draw_market_feedback_scatter
 
-@st.cache_data
-def build_factor_data_with_cache(halflifes):
-    return build_factor_data2(halflifes)
+# halflifes = [21, 63, 126, 252]
 
-factor_data = build_factor_data_with_cache(halflifes)
-factor_list = factor_data['factor_name'].values
+# @st.cache_data
+# def build_factor_data_with_cache(halflifes):
+#     return build_factor_data2(halflifes)
 
-corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=1)
-return_start = st.date_input('Start', value='2024-12-31') #, on_change)
-return_end   = st.date_input('End', value='today')
-vol_type     = st.selectbox('Volatility Halflife', options=halflifes, index=1)
-corr_type    = st.selectbox('Correlation Halflife', options=halflifes, index=1)
-return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
+# factor_data = build_factor_data_with_cache(halflifes)
+# factor_list = factor_data['factor_name'].values
 
-fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
+# corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=1)
+# return_start = st.date_input('Start', value='2024-12-31') #, on_change)
+# return_end   = st.date_input('End', value='today')
+# vol_type     = st.selectbox('Volatility Halflife', options=halflifes, index=1)
+# corr_type    = st.selectbox('Correlation Halflife', options=halflifes, index=1)
+# return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
 
-st.write(fig)
+# fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
+
+# st.write(fig)
