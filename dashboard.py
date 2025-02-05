@@ -43,7 +43,8 @@ fig = px.line(
 )
 
 # Show plot
-fig.show()
+# fig.show()
+st.write(fig)
 
 
 
