@@ -26,14 +26,15 @@
 
 ### TEST 3
 
+import streamlit as st
 import plotly.express as px
 import pandas as pd
 import yfinance as yf
 
 data = yf.download('SPY', start='2020-01-01', end='2023-01-01')['Close']
 fig = px.line(data)
-fig.show()
-
+# fig.show()
+st.write(fig)
 
 
 ### TEST 2
