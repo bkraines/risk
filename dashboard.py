@@ -24,20 +24,39 @@
 # st.write(fig)
 
 
-### TEST 3
+### TEST 4 - BIGGER YAHOO CHART
 
 import streamlit as st
 import plotly.express as px
 import pandas as pd
 import yfinance as yf
+from data import get_factor_master
 
-data = yf.download('SPY', start='2020-01-01', end='2023-01-01')['Close']
+factor_master = get_factor_master()
+factor_list = factor_master.index.values.tolist()
+data = yf.download(factor_list, start='2020-01-01', end='2023-01-01')['Close']
 fig = px.line(data)
 # fig.show()
 st.write(fig)
 
 
-### TEST 2
+
+
+
+### TEST 3 - YAHOO CHART
+
+# import streamlit as st
+# import plotly.express as px
+# import pandas as pd
+# import yfinance as yf
+
+# data = yf.download('SPY', start='2020-01-01', end='2023-01-01')['Close']
+# fig = px.line(data)
+# # fig.show()
+# st.write(fig)
+
+
+### TEST 2 - LINE CHART
 
 # import streamlit as st
 
@@ -69,6 +88,6 @@ st.write(fig)
 # st.write(fig)
 
 
-#### TEST 1
+#### TEST 1 - HELLO WORLD
 
 # # st.write('hello world ttt')
