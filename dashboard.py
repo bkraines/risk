@@ -5,7 +5,7 @@ from util import format_date
 from data import build_factor_data2
 from market_feedback import draw_market_feedback_scatter
 
-halflifes = [21, 63, 126, 252]
+halflifes = [21, 63] #, 126, 252]
 
 # @st.cache_data
 def build_factor_data_with_cache(halflifes):
