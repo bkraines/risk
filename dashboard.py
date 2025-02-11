@@ -24,20 +24,31 @@
 # st.write(fig)
 
 
-## TEST 4 - BIGGER YAHOO CHART
+## TEST 5 - USE FACTOR DATA
 
 import streamlit as st
-import plotly.express as px
-import pandas as pd
-import yfinance as yf
-from data import get_factor_master
+from data import build_factor_data2
 
-factor_master = get_factor_master()
-factor_list = factor_master.index.values.tolist()
-data = yf.download(factor_list, start='2020-01-01', end='2023-01-01')['Close']
-fig = px.line(data)
-# fig.show()
-st.write(fig)
+halflifes = [63, 252]
+ds = build_factor_data2(halflifes)
+df = ds.cret.to_pandas()['SPY'].sort_values(ascending=False).head(10)
+st.write(df)
+
+
+## TEST 4 - BIGGER YAHOO CHART
+
+# import streamlit as st
+# import plotly.express as px
+# import pandas as pd
+# import yfinance as yf
+# from data import get_factor_master
+
+# factor_master = get_factor_master()
+# factor_list = factor_master.index.values.tolist()
+# data = yf.download(factor_list, start='2020-01-01', end='2023-01-01')['Close']
+# fig = px.line(data)
+# # fig.show()
+# st.write(fig)
 
 
 
