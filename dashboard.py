@@ -7,7 +7,7 @@ from market_feedback import draw_market_feedback_scatter
 
 halflifes = [21, 63] #, 126, 252]
 
-# @st.cache_data
+@st.cache_data
 def build_factor_data_with_cache(halflifes):
     return build_factor_data2(halflifes)
 
