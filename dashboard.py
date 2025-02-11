@@ -23,16 +23,37 @@
 
 # st.write(fig)
 
-
-## TEST 5 - USE FACTOR DATA
+## TEST 6 - USE FACTOR DATA
 
 import streamlit as st
 from data import build_factor_data2
+from market_feedback import draw_market_feedback_scatter
 
 halflifes = [63, 252]
-ds = build_factor_data2(halflifes)
-df = ds.cret.to_pandas()['SPY'].sort_values(ascending=False).head(10)
+factor_data = build_factor_data2(halflifes)
+df = factor_data.cret.to_pandas()['SPY'].sort_values(ascending=False).head(10)
 st.write(df)
+
+return_start = '2024-12-31'
+return_end = factor_data.indexes['date'].max()
+vol_type   = 63
+corr_type  = 63
+corr_asset = 'SPY'
+return_title = f'Returns (std)'
+
+fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
+st.write(fig)
+
+
+## TEST 5 - USE FACTOR DATA
+
+# import streamlit as st
+# from data import build_factor_data2
+
+# halflifes = [63, 252]
+# ds = build_factor_data2(halflifes)
+# df = ds.cret.to_pandas()['SPY'].sort_values(ascending=False).head(10)
+# st.write(df)
 
 
 ## TEST 4 - BIGGER YAHOO CHART
