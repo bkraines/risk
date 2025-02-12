@@ -1,7 +1,6 @@
 import streamlit as st
-from util import format_date
+from util import format_date, check_memory_usage
 from data import build_factor_data2
-from util import check_memory_usage
 from market_feedback import draw_market_feedback_scatter
 
 halflifes = [126] # [21, 63, 126, 252]
@@ -26,5 +25,7 @@ return_title = f'Returns from {format_date(return_start)} to {format_date(return
 fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
 
 st.write(fig)
-st.write(f'Memory usage: {check_memory_usage()} MB')
+
+with st.sidebar:
+    st.write(f'Memory usage: {check_memory_usage()} MB')
 

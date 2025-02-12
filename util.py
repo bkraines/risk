@@ -1,3 +1,4 @@
+import psutil
 import pandas as pd
 import xarray as xr
 
@@ -47,3 +48,10 @@ def xr_pct_change(da: xr.DataArray, dim: str, periods: int = 1) -> xr.DataArray:
 
 def format_date(date_str):
     return pd.to_datetime(date_str).strftime('%m/%d')
+
+
+def check_memory_usage():
+    '''Returns memory usage in MB'''
+    memory_info = psutil.Process().memory_info()
+    return int(memory_info.rss / 1024 ** 2) + 1
+    # print(f"Memory usage: {memory_info.rss / 1024 ** 2:.2f} MB")
