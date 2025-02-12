@@ -55,3 +55,17 @@ def check_memory_usage():
     memory_info = psutil.Process().memory_info()
     return int(memory_info.rss / 1024 ** 2) + 1
     # print(f"Memory usage: {memory_info.rss / 1024 ** 2:.2f} MB")
+
+
+def summarize_memory_usage():
+    '''Summarizes memory in GB'''
+    
+    _dict = ({'Process usage':    psutil.Process().memory_info().rss,
+              'System available': psutil.virtual_memory().available,
+              'System total':     psutil.virtual_memory().total,
+              })
+    
+    return (pd.Series(name ='Memory Usage (GB)',
+                      data = _dict)
+            .div(1024 ** 3)
+            .round(3))

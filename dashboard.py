@@ -1,5 +1,5 @@
 import streamlit as st
-from util import format_date, check_memory_usage
+from util import format_date, check_memory_usage, summarize_memory_usage
 from data import build_factor_data2
 from market_feedback import draw_market_feedback_scatter
 
@@ -28,4 +28,4 @@ st.write(fig)
 
 with st.sidebar:
     st.write(f'Memory usage: {check_memory_usage()} MB')
-
+    st.table(summarize_memory_usage())
