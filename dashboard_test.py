@@ -1,4 +1,4 @@
-t# TEST 11 - CHECK MEMORY
+# TEST 11 - CHECK MEMORY
 # TEST 10 - SMALLER DATASET
 
 import streamlit as st
