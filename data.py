@@ -134,7 +134,9 @@ def build_factor_data2(halflifes: List[int], factor_set='read') -> xr.Dataset:
                                    diffusion_map=diffusion_map, 
                                    multiplier_map=multiplier_map)
     
+    # factor_list_composite = factor_master.query('source==composite').index
     portfolios_weights = (get_portfolios()
+                        #   .loc[factor_list_composite]
                           .pipe(safe_reindex, factor_master)
                           .fillna(0)
                           .loc[factor_list_yf]
