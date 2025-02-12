@@ -72,7 +72,7 @@ def get_factor_data(halflifes: Optional[List[int]] = None) -> xr.Dataset:
     if halflifes == None:
         halflifes = [21, 63, 126, 252, 512]
     
-    factor_master = get_factor_master()
+    factor_master = get_factor_master(sheet_name='read_nocomposite')
     asset_list = factor_master.index.to_list()
     
     ds = xr.Dataset()
@@ -81,7 +81,7 @@ def get_factor_data(halflifes: Optional[List[int]] = None) -> xr.Dataset:
     # ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
     ds['ret']   = (ds['ohlcv']
                    .sel(ohlcv_type='adj close')
-                   .fill(dim='date')
+                   .ffill(dim='date')
                    .pipe(xr_pct_change, 'date'))
     ds['vol']   = get_volatility_set(ds['ret'], halflifes)
     ds['corr']  = get_correlation_set(ds['ret'], halflifes)
