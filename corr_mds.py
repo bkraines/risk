@@ -182,7 +182,9 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     
     args_animation = {'animation_frame': 'date', 'animation_group': 'asset'}  if 'date' in df.columns else {}
     args_format    = {'template': 'plotly_white', 'height': 750, 'width': 750}
-    args_size      = {'size': 'size', 'size_max': 10} if 'size' in df.columns else {}
+    # args_size      = {'size': 'size', 'size_max': 15} if 'size' in df.columns else {}
+    args_size      = {'size': 'marker_size'} if 'marker_size' in df.columns else {}
+    args_symbol    = {'symbol': 'marker_symbol'} if 'marker_symbol' in df.columns else {}
     # args_textcolor = ['black' if condition else 'lightgray' for condition in (df['asset']=='SPY')]
     # args_textcolor = ['black' if asset == 'SPY' else 'lightgray' for asset in df['asset']]
     df['textcolor'] = ['black' if asset == 'SPY' else 'lightgray' for asset in df['asset']]
@@ -198,6 +200,7 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
                       x='dim1', y='dim2', text='asset', color='asset_class', 
                       color_discrete_map=color_dict,
                       **args_size,
+                      **args_symbol,
                       **args_animation,
                       **args_format)
            .update_traces(textposition='middle right', 
@@ -227,7 +230,8 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     if tick_range is not None:
         if tick_range == 'auto':
             tick_range = df[['dim1', 'dim2']].abs().max().max()
-        fig.update_xaxes(range=(-tick_range, tick_range)).update_yaxes(range=(-tick_range, tick_range))
+        (fig.update_xaxes(range=(-tick_range, tick_range))
+            .update_yaxes(range=(-tick_range, tick_range)))
     
     return fig
 
