@@ -42,6 +42,7 @@ def px_scatter(df, x, y, color_map_override=None, **kwargs):
     # TODO: Refactor to get_color_map() function
     if (color is None) or (color_map_override is None):
         color_discrete_map = None
+        color_map_override = {}
     else:
         color_keys = df[color].unique()
         color_sequence = pio.templates[args_format['template']]['layout']['colorway']
@@ -102,7 +103,14 @@ def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type
     fig = (px_scatter(df, x='corr', y='zscore', text='asset', color='asset_class', #size='size',
                       color_map_override = color_map_override)
            .update_layout(yaxis_title=return_title,
-                          xaxis_title=f'Correlation with {corr_asset}'))
+                          xaxis_title=f'Correlation with {corr_asset}')
+           .update_xaxes(showgrid=True, 
+                         tick0=0,
+                         dtick=0.25, 
+                         zeroline=True,
+                         zerolinecolor='darkgray')
+           .update_yaxes(zeroline=True, 
+                         zerolinecolor='darkgray'))
     # from chart import px_format
     # fig = px_format(fig, 
     #                 x_title='Correlation with 10-year bond',

@@ -26,19 +26,11 @@ def build_streamlit_dashboard(factor_data):
     return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
     fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
 
-    st.write(fig
-             .update_xaxes(showgrid=True, 
-                           tick0=0,
-                           dtick=0.25, 
-                           zeroline=True,
-                           zerolinecolor='darkgray')
-             .update_yaxes(zeroline=True, 
-                           zerolinecolor='darkgray'))
+    st.write(fig)
 
     with st.sidebar:
         st.write(f'Memory usage: {check_memory_usage()} MB')
         st.table(summarize_memory_usage())
-
 
 factor_data = build_factor_data_with_cache(halflifes)
 build_streamlit_dashboard(factor_data)
