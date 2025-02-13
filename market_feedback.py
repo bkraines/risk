@@ -8,69 +8,12 @@ import plotly.express as px
 import plotly.io as pio
 
 from stats import total_return
-
-
-def px_scatter(df, x, y, color_map_override=None, **kwargs):
-    """
-    Create a scatter plot using Plotly with customized color mapping and formatting.
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The data frame containing the data to be plotted.
-    x : str
-        The column name to be used for the x-axis.
-    y : str
-        The column name to be used for the y-axis.
-    color_map_override : dict, optional
-        A dictionary to override the default color sequence for specific categories.
-    **kwargs : dict
-        Additional keyword arguments to be passed to the plotly.express.scatter function. Typical arguments include:
-        `text`, `color`, `size`, and `symbol`, which contain column names for those attributes.
-    Returns
-    -------
-    plotly.graph_objs._figure.Figure
-        The generated scatter plot figure.
-    Notes
-    -----
-    The function uses the 'plotly_white' template by default and sets the figure height and width to 750.
-    If 'color' is provided in kwargs and 'color_map_override' is not None, a custom color mapping is applied.
-    The text font color for each trace is updated based on the provided color map override.
-    """
-    args_format = {'template': 'plotly_white', 'height': 750, 'width': 750}
-    
-    color = kwargs.get('color')
-    # TODO: Refactor to get_color_map() function
-    if (color is None) or (color_map_override is None):
-        color_discrete_map = None
-        color_map_override = {}
-    else:
-        color_keys = df[color].unique()
-        color_sequence = pio.templates[args_format['template']]['layout']['colorway']
-        color_dict = {a: b for a, b in zip(color_keys, color_sequence)}
-        color_discrete_map = {**color_dict, **color_map_override}
-
-    fig = (px.scatter(df, x=x, y=y, **kwargs, #text=text, color=color, size=size, symbol=symbol, 
-                      color_discrete_map=color_discrete_map,
-                      size_max=20,
-                      **args_format)
-           .update_traces(textposition='middle right', textfont_color='lightgray')
-           .update_layout(legend_title_text=None)
-           )
-
-    def get_trace_color(trace, legendgroup):
-        return trace.marker.color if trace.legendgroup in legendgroup else 'lightgray'
-
-    asset_class_list = color_map_override.keys()
-    fig.for_each_trace(lambda t: t.update(textfont_color = get_trace_color(t, asset_class_list)))
-
-    return fig
-
-
-
+from chart import px_scatter
 
 
 def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title):
     # TODO: Accomodate MTD, YTD, date interval, date range, and single day
+    # TODO: Move MWTIX renaming to factor_master
     
     ndays = factor_data['cret'].sel(date=slice(return_start, return_end)).date.size - 1  # - 1
     corr  = (factor_data['corr']
@@ -108,9 +51,9 @@ def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type
                          tick0=0,
                          dtick=0.25, 
                          zeroline=True,
-                         zerolinecolor='darkgray')
+                         zerolinecolor='lightgray')
            .update_yaxes(zeroline=True, 
-                         zerolinecolor='darkgray'))
+                         zerolinecolor='lightgray'))
     # from chart import px_format
     # fig = px_format(fig, 
     #                 x_title='Correlation with 10-year bond',

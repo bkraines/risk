@@ -32,6 +32,7 @@ def build_streamlit_dashboard(factor_data):
         st.write(f'Memory usage: {check_memory_usage()} MB')
         st.table(summarize_memory_usage())
 
+
 factor_data = build_factor_data_with_cache(halflifes)
 build_streamlit_dashboard(factor_data)
 del(factor_data)
