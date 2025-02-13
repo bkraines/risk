@@ -5,9 +5,9 @@ from market_feedback import draw_market_feedback_scatter
 
 halflifes = [126] # [21, 63, 126, 252]
 
-# @st.cache_data
+@st.cache_data
 def build_factor_data_with_cache(halflifes):
-    return build_factor_data2(halflifes)
+    return build_factor_data2(halflifes, read_cache=False)
 
 def build_streamlit_dashboard(factor_data):
     # TODO: Add peak memory usage (before deleting factor_data)
