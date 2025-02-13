@@ -5,11 +5,13 @@ from market_feedback import draw_market_feedback_scatter
 
 halflifes = [126] # [21, 63, 126, 252]
 
-@st.cache_data
+# @st.cache_data
 def build_factor_data_with_cache(halflifes):
     return build_factor_data2(halflifes)
 
 def build_streamlit_dashboard(factor_data):
+    # TODO: Add peak memory usage (before deleting factor_data)
+    # TODO: Aḍd initial memory usage (before loading factor_data)
     factor_list = factor_data['factor_name'].values
 
     with st.sidebar:
@@ -25,6 +27,11 @@ def build_streamlit_dashboard(factor_data):
     fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
 
     st.write(fig)
+    # .update_xaxes(showgrid=True, 
+    #                           tick0=0,
+    #                           dtick=0.25, 
+    #                           zeroline=True,
+    #                           zerolinecolor='#555555'))
 
     with st.sidebar:
         st.write(f'Memory usage: {check_memory_usage()} MB')
@@ -33,3 +40,4 @@ def build_streamlit_dashboard(factor_data):
 
 factor_data = build_factor_data_with_cache(halflifes)
 build_streamlit_dashboard(factor_data)
+del(factor_data)
