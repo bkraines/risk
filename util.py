@@ -113,13 +113,20 @@ def cache_to_file(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(*args: List[Any], read_cache=True, write_cache=True, cache_dir='cache', cache_file=None, **kwargs: List[Any]) -> Any:
+    def wrapper(*args: List[Any], read_cache=True, write_cache=True, cache_dir='cache', cache_file=None, check=None, **kwargs: List[Any]) -> Any:
+        if check is None:
+            check = lambda x: True
+        
         if cache_file is None:
             cache_file = f'{func.__name__}.pkl'
         cache_path = os.path.join(cache_dir, cache_file)
                
         if read_cache and os.path.exists(cache_path):
             data = read_pickle(cache_path)
+            if not check(data):
+                data = func(*args, **kwargs)
+                if write_cache:
+                    write_pickle(data, cache_path)
         else:
             data = func(*args, **kwargs)
             if write_cache:

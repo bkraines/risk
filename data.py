@@ -1,4 +1,5 @@
 from typing import Optional, List
+from datetime import datetime
 
 import pandas as pd
 import xarray as xr
@@ -113,6 +114,12 @@ def build_dataset_with_composites(halflifes: List[int]) -> xr.Dataset:
     factor_data['asset'].attrs = factor_master.T.to_dict()
 
     return factor_data
+
+
+def is_data_stale(factor_data: xr.Dataset) -> bool:
+    date_latest = factor_data.indexes['date'].max()
+    date_today = pd.Timestamp(datetime.today().date())
+    return date_latest >= date_today
 
 
 @cache_to_file
