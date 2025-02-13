@@ -6,7 +6,7 @@ import xarray as xr
 import yfinance as yf
 
 # from data import get_factor_master, get_yf_data
-from util import xr_pct_change, safe_reindex
+from util import xr_pct_change, safe_reindex, cache_to_file
 from stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 
 
@@ -115,6 +115,7 @@ def build_dataset_with_composites(halflifes: List[int]) -> xr.Dataset:
     return factor_data
 
 
+@cache_to_file
 def build_factor_data2(halflifes: List[int], factor_set='read') -> xr.Dataset:
     # TODO: Check vol units
     factor_master = get_factor_master('factor_master.xlsx', factor_set)

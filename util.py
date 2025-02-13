@@ -1,4 +1,10 @@
+from typing import Callable, Any, List
+
+import os 
 import psutil
+import functools
+import pickle
+
 import pandas as pd
 import xarray as xr
 
@@ -69,3 +75,54 @@ def summarize_memory_usage():
                       data = _dict)
             .div(1024 ** 3)
             .round(3))
+    
+
+def write_pickle(obj: Any, path: str) -> None:
+    with open(path, 'wb') as f:
+        pickle.dump(obj, f, protocol=-1)
+        
+def read_pickle(path: str) -> Any:
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
+def cache_to_file(func: Callable) -> Callable:
+    """
+    A decorator to cache the result of a function to a file. If the cache file exists, 
+    the result is read from the file instead of calling the function. If the cache file 
+    does not exist, the function is called and the result is written to the cache file.
+    Parameters
+    ----------
+    func : Callable
+        The function to be decorated.
+    Returns
+    -------
+    Callable
+        The wrapped function with caching functionality.
+    Notes
+    -----
+    The cache file is stored in the specified cache directory with a default name 
+    based on the function name and a '.pkl' extension. The cache directory and file 
+    name can be customized through the decorator's parameters.
+    Examples
+    --------
+    >>> @cache_to_file
+    ... def expensive_function(x):
+    ...     # Some expensive computation
+    ...     return x * x
+    >>> result = expensive_function(2)
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: List[Any], read_cache=True, write_cache=True, cache_dir='cache', cache_file=None, **kwargs: List[Any]) -> Any:
+        if cache_file is None:
+            cache_file = f'{func.__name__}.pkl'
+        cache_path = os.path.join(cache_dir, cache_file)
+               
+        if read_cache and os.path.exists(cache_path):
+            data = read_pickle(cache_path)
+        else:
+            data = func(*args, **kwargs)
+            if write_cache:
+                write_pickle(data, cache_path)
+        return data
+    return wrapper
