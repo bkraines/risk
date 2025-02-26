@@ -10,5 +10,5 @@ matplotlib==3.8.2
 plotly==5.22.0
 # kaleido==0.1.*      # for plotly png (downgraded for bug fix, https://stackoverflow.com/a/72614865/5713305)
 # nbformat==5.10.4    # for plotly notebook
-yfinance==0.2.54
+yfinance            # Use latest version for when Yahoo changes API
 streamlit==1.42.0
