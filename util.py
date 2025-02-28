@@ -75,15 +75,31 @@ def summarize_memory_usage():
                       data = _dict)
             .div(1024 ** 3)
             .round(3))
-    
+
 
 def write_pickle(obj: Any, path: str) -> None:
     with open(path, 'wb') as f:
         pickle.dump(obj, f, protocol=-1)
-        
+
 def read_pickle(path: str) -> Any:
     with open(path, 'rb') as f:
         return pickle.load(f)
+
+def write_zarr(ds: xr.Dataset, path: str) -> None:
+    ds.to_zarr(path, mode='w')
+
+def read_zarr(path: str) -> xr.Dataset:
+    return xr.open_zarr(path)
+
+def read_file(path: str, type: str) -> Any:
+    type_dict = {'pkl':  read_pickle, 
+                 'zarr': read_zarr}
+    return type_dict[type](path)    
+
+def write_file(obj: Any, path: str, type: str) -> None:
+    type_dict = {'pkl':  write_pickle, 
+                 'zarr': write_zarr}
+    return type_dict[type](obj, path)
 
 def cache_to_file(func: Callable) -> Callable:
     """
@@ -113,23 +129,26 @@ def cache_to_file(func: Callable) -> Callable:
     """
 
     @functools.wraps(func)
-    def wrapper(*args: List[Any], read_cache=True, write_cache=True, cache_dir='cache', cache_file=None, check=None, **kwargs: List[Any]) -> Any:
+    def wrapper(*args: List[Any], read_cache=True, write_cache=True, 
+                cache_dir='cache', cache_file=None, check=None,
+                file_type='pkl',
+                **kwargs: List[Any]) -> Any:
         if check is None:
             check = lambda x: True
-        
+
         if cache_file is None:
-            cache_file = f'{func.__name__}.pkl'
+            cache_file = f'{func.__name__}.{file_type}'
         cache_path = os.path.join(cache_dir, cache_file)
-               
+
         if read_cache and os.path.exists(cache_path):
-            data = read_pickle(cache_path)
+            data = read_file(cache_path, file_type)
             if not check(data):
                 data = func(*args, **kwargs)
                 if write_cache:
-                    write_pickle(data, cache_path)
+                    write_file(data, cache_path, file_type)
         else:
             data = func(*args, **kwargs)
             if write_cache:
-                write_pickle(data, cache_path)
+                write_file(data, cache_path, file_type)
         return data
     return wrapper

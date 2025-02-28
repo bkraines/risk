@@ -122,9 +122,24 @@ def is_data_stale(factor_data: xr.Dataset) -> bool:
     return date_latest >= date_today
 
 
+def build_factor_data(halflifes: List[int], factor_set='read', **kwargs) -> xr.Dataset:
+    '''
+    Cache build_factor_data2 with staleness check
+    '''
+    # TODO: Consider refactoring check to be argument of decorator,
+    #       e.g. @cache_to_file(check=is_data_stale)
+    #       Maybe this is simpler?
+    return build_factor_data2(halflifes, 
+                              factor_set, 
+                              check=is_data_stale,
+                              file_type='zarr',
+                              **kwargs)
+
+
 @cache_to_file
 def build_factor_data2(halflifes: List[int], factor_set='read') -> xr.Dataset:
     # TODO: Check vol units
+    # TODO: Rename
     factor_master = get_factor_master('factor_master.xlsx', factor_set)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
