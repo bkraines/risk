@@ -1,11 +1,30 @@
 from typing import Union, List
+from plotly.graph_objs import Figure
+
+import os
+
+import pandas as pd
+import xarray as xr
 
 import plotly.express as px
-from plotly.graph_objs import Figure
 import plotly.io as pio
 
+from config import IMAGE_DIR
 
-import xarray as xr
+
+def px_write(fig, filename, directory=IMAGE_DIR):
+    
+    def get_extension(filename):
+        return os.path.splitext(filename)[1][1:]
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        
+    file_path = os.path.join(directory, filename)
+    if get_extension(filename) == 'html':
+        fig.write_html(file_path)
+    else:
+        fig.write_image(file_path)
 
 
 def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotations: bool = False) -> Figure:
@@ -151,3 +170,25 @@ def draw_correlation(corr: xr.DataArray, factor_name: str, factor_name_1: str, c
     fig = px_line(ds, x='date', y='corr', color='corr_type', title=f'Correlation of {factor_name} and {factor_name_1}')
     return fig
     
+
+def format_corr_matrix(corr: pd.DataFrame): # -> pd.io.formats.style.Styler:
+    """
+    Format the correlation matrix by adding asset class information and sorting.
+    
+    Parameters
+    ----------
+    corr : pd.DataFrame
+        The correlation matrix with assets as both rows and columns.
+    
+    Returns
+    -------
+    pd.io.formats.style.Styler
+        The formatted correlation matrix as a pandas Styler object.
+    """
+    # Sort the correlation matrix by asset class
+    corr = corr
+    
+    # Style the correlation matrix
+    styled_corr = corr.style.background_gradient(cmap='coolwarm', vmin=-1, vmax=1).format(precision=2)
+    
+    return styled_corr

@@ -4,11 +4,8 @@ from numpy import sqrt
 import pandas as pd
 import xarray as xr
 
-import plotly.express as px
-import plotly.io as pio
-
 from stats import total_return
-from chart import px_scatter
+from chart import px_scatter, px_write
 
 
 def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title):
@@ -100,5 +97,7 @@ def draw_market_feedback_scatter_set(factor_data, corr_asset_list, vol_type, cor
         i = intervals.loc[interval]
         fig = draw_market_feedback_scatter(factor_data, i['start_date'], i['end_date'], vol_type, corr_type, corr_asset, i['chart_title'])
         fig.show(renderer='png')
-        fig.write_image(f'feedback_{corr_asset}_{interval}.png')
-        # fig.write_html(f'feedback_{corr_asset}_{interval}.html')
+        px_write(fig, f'feedback_{corr_asset}_{interval}.png')
+        # px_write(fig, f'feedback_{corr_asset}_{interval}.html')
+
+
