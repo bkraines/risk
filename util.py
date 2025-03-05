@@ -7,6 +7,7 @@ import pickle
 
 import pandas as pd
 import xarray as xr
+from typing import Literal
 
 
 def safe_reindex(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
@@ -106,19 +107,40 @@ def cache_to_file(func: Callable) -> Callable:
     A decorator to cache the result of a function to a file. If the cache file exists, 
     the result is read from the file instead of calling the function. If the cache file 
     does not exist, the function is called and the result is written to the cache file.
+
     Parameters
     ----------
     func : Callable
         The function to be decorated.
+    *args : List[Any]
+        Positional arguments to pass to the function.
+    read_cache : bool, optional
+        Whether to read from the cache if it exists. Defaults to True.
+    write_cache : bool, optional
+        Whether to write the result to the cache. Defaults to True.
+    cache_dir : str, optional
+        Directory where the cache file is stored. Defaults to 'cache'.
+    cache_file : str, optional
+        Name of the cache file. Defaults to None, which means the cache file name will be derived from the function name.
+    check : callable, optional
+        A function to validate the cached data. Defaults to a function that always returns True. If False, the function will be recomputed.
+    file_type : Literal['pkl', 'zarr'], optional
+        The file type for the cache file. Defaults to 'pkl'.
+    **kwargs : List[Any]
+        Keyword arguments to pass to the function.
+
     Returns
     -------
     Callable
-        The wrapped function with caching functionality.
+        The result of the function, either from the cache or freshly computed.
+
     Notes
     -----
     The cache file is stored in the specified cache directory with a default name 
-    based on the function name and a '.pkl' extension. The cache directory and file 
-    name can be customized through the decorator's parameters.
+    based on the function name and a specified file type extension (default is '.pkl'). 
+    The cache directory, file name, and file type can be customized through the 
+    decorator's parameters.
+
     Examples
     --------
     >>> @cache_to_file
@@ -127,11 +149,11 @@ def cache_to_file(func: Callable) -> Callable:
     ...     return x * x
     >>> result = expensive_function(2)
     """
-
-    @functools.wraps(func)
-    def wrapper(*args: List[Any], read_cache=True, write_cache=True, 
-                cache_dir='cache', cache_file=None, check=None,
-                file_type='pkl',
+    def wrapper(*args: List[Any], 
+                read_cache=True, write_cache=True, 
+                cache_dir='cache', cache_file=None, 
+                check=None,
+                file_type: Literal['pkl', 'zarr'] = 'pkl',
                 **kwargs: List[Any]) -> Any:
         
         if check is None:
