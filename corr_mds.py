@@ -187,7 +187,7 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     args_symbol    = {'symbol': 'marker_symbol'} if 'marker_symbol' in df.columns else {}
     # args_textcolor = ['black' if condition else 'lightgray' for condition in (df['asset']=='SPY')]
     # args_textcolor = ['black' if asset == 'SPY' else 'lightgray' for asset in df['asset']]
-    df['textcolor'] = ['black' if asset == 'SPY' else 'lightgray' for asset in df['asset']]
+    df['textcolor'] = ['black' if asset == 'SPY' else 'lightgray' for asset in df['factor_name']]
     
     
     asset_class_list = df.asset_class.unique()
@@ -197,7 +197,7 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     color_dict['Theme'] = 'red'
     
     fig = (px.scatter(df, 
-                      x='dim1', y='dim2', text='asset', color='asset_class', 
+                      x='dim1', y='dim2', text='factor_name', color='asset_class', 
                       color_discrete_map=color_dict,
                       **args_size,
                       **args_symbol,
