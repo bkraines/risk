@@ -12,8 +12,6 @@ from data import get_factor_master, get_portfolios
 from stats import get_volatility_set, get_correlation_set
 
 
-
-
 def fill_returns(df):
     return df.ffill()
 
@@ -58,8 +56,6 @@ def calculate_returns(cret, diffusion_type, multiplier=1e-4):
             raise ValueError(f'Unsupported diffusion_type of {diffusion_type} for {cret.name}')
         # case nan:
         #     raise ValueError(f'No diffusion_type provided for {cret.name}')
-
-
 
 
 def accumulate_returns_old(ret, diffusion_type, level=None):

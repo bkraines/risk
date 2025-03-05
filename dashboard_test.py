@@ -3,7 +3,7 @@
 
 import streamlit as st
 from util import format_date
-from data import build_factor_data2
+from data import build_factor_data
 from util import check_memory_usage
 from market_feedback import draw_market_feedback_scatter
 
@@ -11,7 +11,7 @@ halflifes = [126] # [21, 63, 126, 252]
 
 @st.cache_data
 def build_factor_data_with_cache(halflifes):
-    return build_factor_data2(halflifes)
+    return build_factor_data(halflifes)
 
 factor_data = build_factor_data_with_cache(halflifes)
 factor_list = factor_data['factor_name'].values
@@ -36,11 +36,11 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 # TEST 8 - MULTIPLE DROPDOWNS
 
 # import streamlit as st
-# from data import build_factor_data2
+# from data import build_factor_data
 # from market_feedback import draw_market_feedback_scatter
 
 # halflifes = [63, 252]
-# factor_data = build_factor_data2(halflifes)
+# factor_data = build_factor_data(halflifes)
 
 # return_start = st.date_input('Start', value='2024-12-31') #, on_change)
 # return_end   = st.date_input('End', value='today')
@@ -59,11 +59,11 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 # TEST 7 - SINGLE DROP DOWN
 
 # import streamlit as st
-# from data import build_factor_data2
+# from data import build_factor_data
 # from market_feedback import draw_market_feedback_scatter
 
 # halflifes = [63, 252]
-# factor_data = build_factor_data2(halflifes)
+# factor_data = build_factor_data(halflifes)
 # df = factor_data.cret.to_pandas()['SPY'].sort_values(ascending=False).head(10)
 # st.write(df)
 
@@ -85,11 +85,11 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 ## TEST 6 - USE FACTOR DATA
 
 # import streamlit as st
-# from data import build_factor_data2
+# from data import build_factor_data
 # from market_feedback import draw_market_feedback_scatter
 
 # halflifes = [63, 252]
-# factor_data = build_factor_data2(halflifes)
+# factor_data = build_factor_data(halflifes)
 # df = factor_data.cret.to_pandas()['SPY'].sort_values(ascending=False).head(10)
 # st.write(df)
 
@@ -107,10 +107,10 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 ## TEST 5 - USE FACTOR DATA
 
 # import streamlit as st
-# from data import build_factor_data2
+# from data import build_factor_data
 
 # halflifes = [63, 252]
-# ds = build_factor_data2(halflifes)
+# ds = build_factor_data(halflifes)
 # df = ds.cret.to_pandas()['SPY'].sort_values(ascending=False).head(10)
 # st.write(df)
 
