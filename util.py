@@ -133,17 +133,17 @@ def cache_to_file(func: Callable) -> Callable:
                 cache_dir='cache', cache_file=None, check=None,
                 file_type='pkl',
                 **kwargs: List[Any]) -> Any:
+        
         if check is None:
             check = lambda x: True
-
         if cache_file is None:
             cache_file = f'{func.__name__}.{file_type}'
         cache_path = os.path.join(cache_dir, cache_file)
-
+        
         if read_cache and os.path.exists(cache_path):
             data = read_file(cache_path, file_type)
             if not check(data):
-                data = func(*args, **kwargs)
+                data = func(*args, **kwargs) # TODO: pass read_cache=False
                 if write_cache:
                     write_file(data, cache_path, file_type)
         else:
