@@ -1,10 +1,9 @@
 import streamlit as st
-import pandas as pd
 
-from data import get_factor_data
+from data import get_factor_data_streamlit
 from chart import draw_volatility, draw_correlation
 from util import check_memory_usage, summarize_memory_usage
-from feedback import build_streamlit_dashboard
+
 
 def build_dashboard_vol(factor_data):
     factor_list = factor_data['factor_name'].values
@@ -27,7 +26,7 @@ def build_dashboard_vol(factor_data):
 
 
 halflifes = [21, 63, 126, 252, 512]
-factor_data = get_factor_data(halflifes)
+factor_data = get_factor_data_streamlit(halflifes)
 
 # tabs = st.tabs(["Correlation", "Feedback"])
 # with tabs[0]:

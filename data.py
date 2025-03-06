@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 
+import streamlit as st
 import pandas as pd
 import xarray as xr
 
@@ -134,6 +135,11 @@ def get_factor_data(halflifes: List[int], factor_set='read', **kwargs) -> xr.Dat
                               check=is_data_current,
                               file_type='zarr',
                               **kwargs)
+
+
+@st.cache_data
+def get_factor_data_streamlit(halflifes):
+    return build_factor_data(halflifes, read_cache=False, write_cache=False)
 
 
 @cache_to_file
