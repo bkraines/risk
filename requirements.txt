@@ -13,3 +13,6 @@ plotly==5.22.0
 yfinance            # Use latest version for when Yahoo changes API
 streamlit==1.42.0
 dask[complete]==2025.2.0 # for parallel computing
+arraylake[icechunk,xarray,virtual]
+# eofs
+# hvplot
