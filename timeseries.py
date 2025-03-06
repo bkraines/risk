@@ -4,7 +4,7 @@ import pandas as pd
 from data import get_factor_data
 from chart import draw_volatility, draw_correlation
 from util import check_memory_usage, summarize_memory_usage
-from dashboard import build_streamlit_dashboard
+from feedback import build_streamlit_dashboard
 
 def build_dashboard_vol(factor_data):
     factor_list = factor_data['factor_name'].values
