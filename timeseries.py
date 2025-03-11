@@ -1,9 +1,9 @@
 import streamlit as st
 
-from data import get_factor_data_streamlit
+from data import get_factor_data
 from chart import draw_volatility, draw_correlation
 from util import check_memory_usage, summarize_memory_usage
-
+from config import STREAMLIT_CACHE
 
 def build_dashboard_vol(factor_data):
     factor_list = factor_data['factor_name'].values
@@ -25,32 +25,12 @@ def build_dashboard_vol(factor_data):
         st.table(summarize_memory_usage())
 
 
-halflifes = [21, 63, 126, 252, 512]
-factor_data = get_factor_data_streamlit(halflifes)
-
-# tabs = st.tabs(["Correlation", "Feedback"])
-# with tabs[0]:
-#     build_dashboard_vol(factor_data)
-# with tabs[1]:
-#     build_streamlit_dashboard(factor_data)
+if STREAMLIT_CACHE:
+    halflifes = [126] 
+else:
+    halflifes = [21, 63, 126, 252, 512]
+factor_data = get_factor_data(halflifes, streamlit=STREAMLIT_CACHE)
 
 build_dashboard_vol(factor_data)
 
 del(factor_data)
-
-
-
-
-
-# tab1, tab2, tab3 = st.tabs(["Cat", "Dog", "Owl"])
-
-# with tab1:
-#     st.header("A cat")
-#     st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
-# with tab2:
-#     st.header("A dog")
-#     st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
-# with tab3:
-#     st.header("An owl")
-#     st.image("https://static.streamlit.io/examples/owl.jpg", width=200)
-

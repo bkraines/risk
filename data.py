@@ -123,20 +123,6 @@ def is_data_current(factor_data: xr.Dataset) -> bool:
     return date_latest >= date_today
 
 
-def get_factor_data(halflifes: List[int], factor_set='read', **kwargs) -> xr.Dataset:
-    '''
-    Cache build_factor_data with staleness check
-    '''
-    # TODO: Consider refactoring check to be argument of decorator,
-    #       e.g. @cache_to_file(check=is_data_stale)
-    #       Maybe this is simpler?
-    return build_factor_data(halflifes, 
-                              factor_set, 
-                              check=is_data_current,
-                              file_type='zarr',
-                              **kwargs)
-
-
 @st.cache_data
 def get_factor_data_streamlit(halflifes):
     return build_factor_data(halflifes, read_cache=False, write_cache=False)
@@ -180,6 +166,25 @@ def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
     factor_data['factor_name'].attrs = factor_master.T.to_dict()
     
     return factor_data #, diffusion_map, levels_latest
+
+
+def get_factor_data(halflifes: List[int], factor_set='read', streamlit=False, **kwargs) -> xr.Dataset:
+    '''
+    Cache build_factor_data with staleness check
+    '''
+    # TODO: Consider refactoring check to be argument of decorator,
+    #       e.g. @cache_to_file(check=is_data_stale)
+    #       Maybe this is simpler?
+    
+    if streamlit:
+        data = get_factor_data_streamlit(halflifes)
+    else:
+        data =  build_factor_data(halflifes, 
+                                  factor_set, 
+                                  check=is_data_current,
+                                  file_type='zarr',
+                                  **kwargs)
+    return data
 
 
 
