@@ -1,4 +1,4 @@
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Literal
 
 import os 
 import psutil
@@ -7,8 +7,9 @@ import pickle
 
 import pandas as pd
 import xarray as xr
-from typing import Literal
+import arraylake as al
 
+from config import CACHE_DIR, ARRAYLAKE_REPO
 
 def safe_reindex(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     assert df1.index.isin(df2.index).all()
@@ -66,12 +67,10 @@ def check_memory_usage():
 
 def summarize_memory_usage():
     '''Summarizes memory in GB'''
-    
     _dict = ({'Process usage':    psutil.Process().memory_info().rss,
               'System available': psutil.virtual_memory().available,
               'System total':     psutil.virtual_memory().total,
               })
-    
     return (pd.Series(name ='Memory Usage (GB)',
                       data = _dict)
             .div(1024 ** 3)
@@ -101,6 +100,49 @@ def write_file(obj: Any, path: str, type: str) -> None:
     type_dict = {'pkl':  write_pickle, 
                  'zarr': write_zarr}
     return type_dict[type](obj, path)
+
+def read_arraylake(repo_name: str | None = None) -> xr.Dataset:
+    if repo_name is None:
+        repo_name = ARRAYLAKE_REPO
+    client = al.Client()
+    repo = client.get_repo(repo_name)
+    session = repo.readonly_session("main")
+    return xr.open_zarr(session.store, consolidated=False)
+
+def write_arraylake(ds: xr.Dataset, repo_name: str | None = None,
+                    commit_message: str = 'Update dataset') -> None:
+    if repo_name is None:
+        repo_name = ARRAYLAKE_REPO
+    client = al.Client()
+    repo = client.get_repo(repo_name)
+    session = repo.writable_session("main")
+    ds.to_zarr(session.store, mode='a', consolidated=False)
+    session.commit(commit_message)
+
+def cache_to_arraylake(func: Callable) -> Callable:
+    # TODO: complete this function
+    # TODO: check staleness by just querying date, not whole dataset
+    def wrapper(*args: List[Any], 
+                read_cache: bool = True, 
+                write_cache: bool = True, 
+                repo_name: str | None = None, 
+                check: Callable | None = None,
+                **kwargs: List[Any]) -> Any:
+        if check is None:
+            check = lambda x: True
+        if read_cache:
+            data = read_arraylake(repo_name)
+            if not check(data):
+                data = func(*args, **kwargs)
+            if write_cache:
+                write_arraylake(data, repo_name)
+        else:
+            data = func(*args, **kwargs)
+            if write_cache:
+                write_arraylake(data, repo_name)
+        return data
+    return wrapper
+
 
 def cache_to_file(func: Callable) -> Callable:
     """
@@ -149,13 +191,16 @@ def cache_to_file(func: Callable) -> Callable:
     ...     return x * x
     >>> result = expensive_function(2)
     """
+    # TODO: Complete arraylake cache... or actually make a different decorator
     def wrapper(*args: List[Any], 
                 read_cache=True, write_cache=True, 
-                cache_dir='cache', cache_file=None, 
+                cache_dir=None, cache_file=None, 
                 check=None,
                 file_type: Literal['pkl', 'zarr'] = 'pkl',
                 **kwargs: List[Any]) -> Any:
         
+        if cache_dir is None:
+            cache_dir = CACHE_DIR
         if check is None:
             check = lambda x: True
         if cache_file is None:

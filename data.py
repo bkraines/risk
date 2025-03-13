@@ -8,9 +8,9 @@ import xarray as xr
 import yfinance as yf
 
 # from data import get_factor_master, get_yf_data
-from util import xr_pct_change, safe_reindex, cache_to_file
+from util import xr_pct_change, safe_reindex, cache_to_file, cache_to_arraylake
 from stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
-
+from config import HALFLIFES
 
 def get_yahoo_data(ticker, field_name, cache=None):
     # TODO: Check cache first
@@ -127,6 +127,10 @@ def is_data_current(factor_data: xr.Dataset) -> bool:
 def get_factor_data_streamlit(halflifes):
     return build_factor_data(halflifes, read_cache=False, write_cache=False)
 
+@cache_to_arraylake
+def get_factor_data_arraylake(halflifes):
+    return build_factor_data(halflifes, read_cache=False, write_cache=False)
+
 
 @cache_to_file
 def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
@@ -168,14 +172,18 @@ def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
     return factor_data #, diffusion_map, levels_latest
 
 
-def get_factor_data(halflifes: List[int], factor_set='read', streamlit=False, **kwargs) -> xr.Dataset:
+def get_factor_data(halflifes: Optional[List[int]] = None, factor_set='read', streamlit=False, **kwargs) -> xr.Dataset:
+    # TODO: Change `streamlit=False` to `target: 'streamlit' | 'arraylake' | None = None`
     '''
-    Cache build_factor_data with staleness check
+    Cache build_factor_data to disk (with staleness check) or streamlit
     '''
     # TODO: Consider refactoring check to be argument of decorator,
     #       e.g. @cache_to_file(check=is_data_stale)
     #       Maybe this is simpler?
+    # TODO: Include arraylake cache
     
+    if halflifes is None:
+        halflifes = HALFLIFES
     if streamlit:
         data = get_factor_data_streamlit(halflifes)
     else:
