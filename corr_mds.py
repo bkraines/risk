@@ -121,7 +121,8 @@ def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor
 
     if transformation == 'rotate_initial':
         date = dates.max()
-        df = corr.sel(date=date, corr_type=63).to_pandas() # * 0 + np.identity(len(corr.asset))
+        # Choose halflife close to 63 days:
+        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed) #init=coordinates) 
         transformed_initial = transform_coordinates(coordinates, 'rotate', factor='SPY')
         transformation = None
@@ -140,7 +141,8 @@ def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor
   
     mds_dict = {}
     for date in dates:
-        df = corr.sel(date=date, corr_type=63).to_pandas() # * 0 + np.identity(len(corr.asset))
+        # Choose halflife close to 63 days
+        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed_initial, n_init=1) #init=transformed) 
         transformed = transform_coordinates(coordinates, transformation, factor=factor, 
                                             factor_list=None, coordinates_initial=transformed_initial)
@@ -258,7 +260,8 @@ def get_marker_size(ds):
 
     # date = '2024-11-01'
     date_latest = ds.date.max().values
-    vol_short = ds['vol'].sel(date=date_latest, vol_type=21)
+    # Choose as close to 21 days as possible
+    vol_short = ds['vol'].sel(date=date_latest, vol_type=21, method='nearest')
     vol_long  = ds['vol'].sel(date=date_latest, vol_type=126)
     vol_ratio = vol_short / vol_long
     vol_ratio.to_pandas() #.rename('vol_ratio') # .sort_values(ascending=False)

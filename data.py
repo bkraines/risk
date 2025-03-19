@@ -10,7 +10,7 @@ import yfinance as yf
 # from data import get_factor_master, get_yf_data
 from util import xr_pct_change, safe_reindex, cache_to_file, cache_to_arraylake, new_cache, business_days_ago, cache_gpt
 from stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
-from config import HALFLIFES
+from config import CACHE_TARGET, HALFLIFES
 
 def get_yahoo_data(ticker, field_name, cache=None):
     # TODO: Check cache first
@@ -19,6 +19,7 @@ def get_yahoo_data(ticker, field_name, cache=None):
 
 
 def get_yahoo_data_set(tickers, field_name, asset_names=None):
+    # TODO: Possibly save time by sending yfinance full list of tickers instead of looping
     if asset_names is None:
         asset_names = tickers
     return (pd.DataFrame({asset_name: get_yahoo_data(ticker, field_name) 
@@ -179,7 +180,7 @@ def get_factor_data2(source, halflifes=None, **kwargs) -> xr.Dataset:
 
 # @cache_to_arraylake
 # @cache_to_file
-@cache_gpt('arraylake')
+@cache_gpt(CACHE_TARGET)
 def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
     # TODO: Check vol units
     factor_master = get_factor_master('factor_master.xlsx', factor_set)
