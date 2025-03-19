@@ -121,7 +121,8 @@ def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor
 
     if transformation == 'rotate_initial':
         date = dates.max()
-        df = corr.sel(date=date, corr_type=63).to_pandas() # * 0 + np.identity(len(corr.asset))
+        # Choose halflife close to 63 days:
+        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed) #init=coordinates) 
         transformed_initial = transform_coordinates(coordinates, 'rotate', factor='SPY')
         transformation = None
@@ -140,7 +141,8 @@ def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor
   
     mds_dict = {}
     for date in dates:
-        df = corr.sel(date=date, corr_type=63).to_pandas() # * 0 + np.identity(len(corr.asset))
+        # Choose halflife close to 63 days
+        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed_initial, n_init=1) #init=transformed) 
         transformed = transform_coordinates(coordinates, transformation, factor=factor, 
                                             factor_list=None, coordinates_initial=transformed_initial)
@@ -180,7 +182,7 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     >>> fig.show()
     """
     
-    args_animation = {'animation_frame': 'date', 'animation_group': 'asset'}  if 'date' in df.columns else {}
+    args_animation = {'animation_frame': 'date', 'animation_group': 'factor_name'}  if 'date' in df.columns else {}
     args_format    = {'template': 'plotly_white', 'height': 750, 'width': 750}
     # args_size      = {'size': 'size', 'size_max': 15} if 'size' in df.columns else {}
     args_size      = {'size': 'marker_size'} if 'marker_size' in df.columns else {}
@@ -251,4 +253,104 @@ def add_whiskers(fig, df, t0, t1):
         
         # Move whiskers underneath existing traces
         fig.data = tuple([fig.data[-1]] + list(fig.data[:-1]))
+    return fig
+
+
+def get_marker_size(ds):
+
+    # date = '2024-11-01'
+    date_latest = ds.date.max().values
+    # Choose as close to 21 days as possible
+    vol_short = ds['vol'].sel(date=date_latest, vol_type=21, method='nearest')
+    vol_long  = ds['vol'].sel(date=date_latest, vol_type=126)
+    vol_ratio = vol_short / vol_long
+    vol_ratio.to_pandas() #.rename('vol_ratio') # .sort_values(ascending=False)
+
+    factor_master = pd.DataFrame(ds.factor_name.attrs).T
+
+    df = factor_master[['hyper_factor']].join(vol_ratio.to_pandas().rename('vol_ratio'))
+    # df['vol_ratio'].sort_values(ascending=False).mul(5).clip(upper=10)
+
+    df['marker_size'] = (df['vol_ratio'].add(1).mul(5).clip(upper=10) #, lower=1)
+                         .where(df['hyper_factor'] != 1, 15)
+                         )
+    date_prior = ds.date.sel(date=slice(None, date_latest)).isel(date=-21).values
+    cret_t1 = ds['cret'].sel(date=date_latest)
+    cret_t0 = ds['cret'].sel(date=date_prior, method='nearest')
+    ret = ((cret_t1/cret_t0)-1).to_pandas()
+    
+    df['marker_symbol'] = ret.map(lambda x: 'circle' if x > 0 else 'triangle-up')
+
+    return df['marker_size'] #, 'marker_symbol']]
+
+
+def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_trump=False, **kwargs):
+    # TODO: Pass in full dataset to extract corr, factor_master, and vol (for sizing)
+    
+    # TODO: Pass in a list of dates or take all dates from the dataarray
+    # TODO: Make clear the ordering of dates (use sorted function)
+    # t0, t1, t2 = dates
+    # (t0, t1, t2) = factor_data2.date.values[[-1, -21-1, -63-1]]
+
+    
+    transformation_type = {None:             'No rotation', 
+                           'rotate':         'Rotate SPY to x-axis each day', 
+                           'normalize':      'SPY transformed to (1, 0)',
+                           'rotate_initial': '' #'Rotate SPY to x-axis today'
+                           }
+
+    factor_master = pd.DataFrame(ds.factor_name.attrs).T
+    
+    marker_size = get_marker_size(ds) #.rename('size')
+    
+    mds_ts = (mds_ts_df(ds.corr, transformation=transformation, start_date=start_date, **kwargs)
+                .reset_index()
+                .join(factor_master, on='factor_name')
+                .assign(date = lambda df: df['date'].astype(str))
+                # .assign(size = lambda df: df['hyper_factor'].mul(1).add(.5).astype('float'))
+                # .assign(size = lambda df: df['hyper_factor'].apply(lambda x: 10 if x == 1 else 3).astype('float'))
+                # .assign(size = lamdba df: marker_size)
+                .join(marker_size, on='factor_name')
+                .replace('MWTIX', 'TCW')
+                )
+    
+    if drop_composites:
+        mds_ts = mds_ts.query('composite == 0')
+
+    if drop_trump:
+        mds_ts = mds_ts.query('factor_name != "TRUMP"')
+    
+    if animate:
+        fig = draw_mds_ts(mds_ts, tick_range=tick_range)
+        fig.update_traces(textfont_color = 'lightgray')
+    
+    else:
+        # print(dates)
+        # print(dates[0])
+        mds_latest = mds_ts[mds_ts['date'] == dates[0]].drop(columns='date')
+        fig = draw_mds_ts(mds_latest, tick_range=tick_range)
+        
+        for i in range(len(dates) - 1):
+            fig = add_whiskers(fig, mds_ts, dates[i], dates[i + 1])
+        # fig = add_whiskers(fig, mds_ts, t0, t1)
+        # fig = add_whiskers(fig, mds_ts, t1, t2)
+        fig.update_layout(legend_title_text=None, title=f'{transformation_type[transformation]}')
+        
+                
+        def get_trace_color(trace, legendgroup):
+            return trace.marker.color if trace.legendgroup in legendgroup else 'lightgray'
+        
+        
+        asset_class_list = ['Theme', 'Portfolio']
+        fig.for_each_trace(lambda t: t.update(textfont_color = get_trace_color(t, asset_class_list)))
+    
+    # r = sqrt(2)/2
+    # r = 0.8
+    # fig.add_shape(
+    #     type="circle",
+    #     xref="x", yref="y",
+    #     x0=-r, y0=-r, x1=r, y1=r,
+    #     line_color='lightgray', line_width=.5,
+    #     )
+    
     return fig

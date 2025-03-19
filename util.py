@@ -1,15 +1,19 @@
-from typing import Callable, Any, List, Literal
+from typing import Callable, Any, List, Literal, Optional
 
 import os 
 import psutil
 import functools
 import pickle
 
+from pandas.tseries.offsets import BDay
+
 import pandas as pd
 import xarray as xr
 import arraylake as al
+import streamlit as st
 
 from config import CACHE_DIR, ARRAYLAKE_REPO
+
 
 def safe_reindex(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     assert df1.index.isin(df2.index).all()
@@ -107,18 +111,22 @@ def read_arraylake(repo_name: str | None = None) -> xr.Dataset:
     client = al.Client()
     repo = client.get_repo(repo_name)
     session = repo.readonly_session("main")
+    print(f"Reading from {repo_name}")
     return xr.open_zarr(session.store, consolidated=False)
 
 def write_arraylake(ds: xr.Dataset, repo_name: str | None = None,
-                    commit_message: str = 'Update dataset') -> None:
+                    commit_message: str = 'Update dataset',
+                    append_dim='date') -> None:
     if repo_name is None:
         repo_name = ARRAYLAKE_REPO
     client = al.Client()
     repo = client.get_repo(repo_name)
     session = repo.writable_session("main")
-    ds.to_zarr(session.store, mode='a', consolidated=False)
+    ds.to_zarr(session.store, mode='a', consolidated=False, append_dim=append_dim)
     session.commit(commit_message)
+    print(f"Committed {commit_message} to {repo_name}")
 
+# @functools.wraps
 def cache_to_arraylake(func: Callable) -> Callable:
     # TODO: complete this function
     # TODO: check staleness by just querying date, not whole dataset
@@ -144,6 +152,22 @@ def cache_to_arraylake(func: Callable) -> Callable:
     return wrapper
 
 
+def new_cache(target: str) -> Callable:
+    
+    def middle(func):
+        if target == 'local':
+            return cache_to_file(func)
+        elif target == 'arraylake':
+            return cache_to_arraylake(func)
+        elif target == 'streamlit':
+            return st.cache_data(func)
+        else:
+            raise ValueError(f"Unsupported cache target: {target}")
+    
+    return middle
+
+
+# @functools.wraps
 def cache_to_file(func: Callable) -> Callable:
     """
     A decorator to cache the result of a function to a file. If the cache file exists, 
@@ -192,6 +216,7 @@ def cache_to_file(func: Callable) -> Callable:
     >>> result = expensive_function(2)
     """
     # TODO: Complete arraylake cache... or actually make a different decorator
+    # Default xarray objects to zarr and others to pkl
     def wrapper(*args: List[Any], 
                 read_cache=True, write_cache=True, 
                 cache_dir=None, cache_file=None, 
@@ -219,3 +244,171 @@ def cache_to_file(func: Callable) -> Callable:
                 write_file(data, cache_path, file_type)
         return data
     return wrapper
+
+
+def business_days_ago(n=1):
+    return (pd.Timestamp.today() - BDay(n)).date()
+
+
+
+def cache_gpt(target: Literal['disk', 'arraylake', 'streamlit'] = 'disk') -> Callable:
+    # TODO: Clean up!
+    # TODO: Switch to `match/case` structure
+    # TODO: Extract `case` logic to separate functions
+    # TODO: Default file type to `zarr` for Datasets with `file` target
+    # TODO: Clean documenation
+    # TODO: Check streamlit staleness logic
+    # TODO: Default repo_name to config.ARRAYLAKE_REPO
+    # TODO: ....
+    """
+    A unified decorator to cache function results based on the specified target.
+    
+    Parameters
+    ----------
+    target : str, optional
+        The caching method to use. Can be 'disk', 'arraylake', or 'streamlit'.
+        Defaults to 'disk'.
+        - If 'disk', caches the result to a file (default: '.pkl' or '.zarr').
+        - If 'arraylake', caches the result to an arraylake repository (requires 'repo_name').
+        - If 'streamlit', caches the result using Streamlit's caching system.
+    
+    Usage Instructions
+    -------------------
+    - For **file caching** ('disk'):
+        - **`cache_file`**: Optional. Specifies the cache file name (defaults to the function name with `.pkl` or `.zarr` extension).
+        - **`cache_dir`**: Optional. Specifies the cache directory (defaults to `'cache'`).
+        - **`file_type`**: Optional. Specifies the file type (defaults to `'pkl'`, but can also be `'zarr'`).
+    
+    - For **arraylake caching** ('arraylake'):
+        - **`repo_name`**: Required. Specifies the arraylake repository where the data is cached.
+        - All other parameters are optional and work the same way as file caching.
+    
+    - For **Streamlit caching** ('streamlit'):
+        - No extra parameters are required. The function is automatically cached using Streamlit's `st.cache_data`.
+        
+    Notes
+    -----
+    - If `target` is set to 'disk', a cache file is read or written to disk.
+    - If `target` is set to 'arraylake', the function result is cached in the arraylake repository.
+    - If `target` is set to 'streamlit', the function will use Streamlit's caching mechanism without additional arguments.
+
+    Example Usage:
+    --------------
+    >>> @my_cache(target='disk')
+    >>> def expensive_function(x):
+    >>>     return x * x
+    >>> result = expensive_function(2)
+    
+    >>> @my_cache(target='arraylake')
+    >>> def fetch_data_from_arraylake():
+    >>>     return some_expensive_query()
+    >>> result = fetch_data_from_arraylake()
+
+    >>> @my_cache(target='streamlit')
+    >>> def streamlit_cached_function():
+    >>>     return some_streamlit_data_processing()
+    >>> result = streamlit_cached_function()
+
+    Wrapper Parameters:
+    -------------------
+    - **`read_cache`**: bool, optional, default=True
+        - **For 'disk' and 'arraylake' targets**: Determines whether to attempt reading from the cache.
+        - **For 'streamlit' target**: This argument is ignored because Streamlit automatically handles caching.
+    
+    - **`write_cache`**: bool, optional, default=True
+        - **For 'disk' and 'arraylake' targets**: Determines whether to write the result to the cache after computing.
+        - **For 'streamlit' target**: This argument is ignored because Streamlit handles cache writing automatically.
+    
+    - **`cache_dir`**: str, optional, default='cache'
+        - **For 'disk' target**: Specifies the directory where cache files are stored.
+        - **For 'arraylake' target**: This parameter is ignored because arraylake does not require a local cache directory.
+        - **For 'streamlit' target**: This parameter is ignored.
+    
+    - **`cache_file`**: str, optional
+        - **For 'disk' target**: Specifies the name of the cache file (defaults to function name with `.pkl` or `.zarr` extension).
+        - **For 'arraylake' target**: This parameter is ignored as the cache is stored in the arraylake repository.
+        - **For 'streamlit' target**: This parameter is ignored as Streamlit's caching system handles this automatically.
+    
+    - **`repo_name`**: str, optional
+        - **For 'arraylake' target**: Specifies the arraylake repository to store the cache.
+        - **For 'disk' and 'streamlit' targets**: This parameter is ignored.
+    
+    - **`check`**: Callable, optional, default=None
+        - **For 'disk' and 'arraylake' targets**: A function to validate whether the cached data is still valid. If `check(data)` returns False, the function is recomputed.
+        - **For 'streamlit' target**: This parameter is ignored, as Streamlit handles caching logic internally.
+    
+    - **`file_type`**: Literal['pkl', 'zarr'], optional, default='pkl'
+        - **For 'disk' target**: Specifies the file type for the cache file (either 'pkl' or 'zarr').
+        - **For 'arraylake' and 'streamlit' targets**: This parameter is ignored.
+    
+    - **`kwargs`**: List[Any], optional
+        - Additional keyword arguments passed to the decorated function.
+
+    """
+    
+    def decorator(func: Callable) -> Callable:
+        def wrapper(*args:       List[Any], 
+                    read_cache:  bool = True, 
+                    write_cache: bool = True, 
+                    cache_dir:   str = 'cache', 
+                    cache_file:  Optional[str] = None, 
+                    repo_name:   Optional[str] = None, 
+                    check:       Optional[Callable] = None, 
+                    file_type:   Optional[Literal['pkl', 'zarr']] = None, 
+                    **kwargs:    List[Any]
+                    ) -> Any:
+            
+            if check is None:
+                check = lambda x: True
+
+            if target == 'disk':
+                # Cache to disk
+                if file_type is None: 
+                    if isinstance(args[0], xr.Dataset):
+                        file_type = 'zarr'
+                    else:
+                        file_type = 'pkl'
+                if cache_file is None:
+                    cache_file = f'{func.__name__}.{file_type}'
+                cache_path = os.path.join(cache_dir, cache_file)
+
+                if read_cache and os.path.exists(cache_path):
+                    data = read_file(cache_path, file_type)
+                    if not check(data):
+                        data = func(*args, **kwargs)
+                        if write_cache:
+                            write_file(data, cache_path, file_type)
+                else:
+                    data = func(*args, **kwargs)
+                    if write_cache:
+                        write_file(data, cache_path, file_type)
+
+            elif target == 'arraylake':
+                # Cache to arraylake
+                if repo_name is None:
+                    # raise ValueError("For arraylake caching, 'repo_name' must be provided.")
+                    repo_name = ARRAYLAKE_REPO
+                
+                if read_cache:
+                    data = read_arraylake(repo_name)
+                    if not check(data):
+                        data = func(*args, **kwargs)
+                    if write_cache:
+                        write_arraylake(data, repo_name)
+                else:
+                    data = func(*args, **kwargs)
+                    if write_cache:
+                        write_arraylake(data, repo_name)
+
+            elif target == 'streamlit':
+                # Cache with Streamlit
+                data = st.cache_data(func)(*args, **kwargs)
+                return data
+
+            else:
+                raise ValueError(f"Unknown cache target: {target}. Must be one of 'disk', 'arraylake', or 'streamlit'.")
+
+            return data
+
+        return wrapper
+    return decorator
