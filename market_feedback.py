@@ -38,6 +38,8 @@ def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type
         #   .assign(size = lambda df: df['hyper_factor'].apply(lambda x: 10 if x == 1 else 1).astype('float'))
           )
     
+    # n = len(df.asset_class.unique())
+    
     color_map_override = {'Portfolio': 'black', 
                           'Theme':     'red'}
     fig = (px_scatter(df, x='corr', y='zscore', text='asset', color='asset_class', #size='size',
@@ -50,7 +52,17 @@ def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type
                          zeroline=True,
                          zerolinecolor='lightgray')
            .update_yaxes(zeroline=True, 
-                         zerolinecolor='lightgray'))
+                         zerolinecolor='lightgray')
+           .update_layout(legend_orientation="h", 
+                          legend_yanchor="top", 
+                          legend_y=1.06, 
+                        #   legend_entrywidthmode='fraction',
+                        #   legend_entrywidth=1/(n+1),
+                        #   legend_entrywidth=40,
+                          ))
+                        #   legend_xanchor="right", ) )
+                        #   legend_x=1)
+                    
     # from chart import px_format
     # fig = px_format(fig, 
     #                 x_title='Correlation with 10-year bond',
@@ -99,5 +111,3 @@ def draw_market_feedback_scatter_set(factor_data, corr_asset_list, vol_type, cor
         fig.show(renderer='png')
         px_write(fig, f'feedback_{corr_asset}_{interval}.png')
         # px_write(fig, f'feedback_{corr_asset}_{interval}.html')
-
-
