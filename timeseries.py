@@ -1,9 +1,10 @@
 import streamlit as st
 
-from data import get_factor_data
+from data import get_factor_data, build_factor_data
 from chart import draw_volatility, draw_correlation
 from util import check_memory_usage, summarize_memory_usage
-from config import STREAMLIT_CACHE
+from config import STREAMLIT_CACHE, HALFLIFES
+
 
 def build_dashboard_vol(factor_data):
     factor_list = factor_data['factor_name'].values
@@ -12,9 +13,9 @@ def build_dashboard_vol(factor_data):
         factor_1 = st.selectbox('Factor 1', options=factor_list, index=1)
         factor_2 = st.selectbox('Factor 2', options=factor_list, index=2)
 
-    figs = {'corr':  draw_correlation(factor_data.corr, factor_name=factor_1, factor_name_1=factor_2, corr_type=halflifes),
-            'vol_1': draw_volatility(factor_data.vol, factor_name=factor_1, vol_type=halflifes),
-            'vol_2': draw_volatility(factor_data.vol, factor_name=factor_2, vol_type=halflifes),
+    figs = {'corr':  draw_correlation(factor_data.corr, factor_name=factor_1, factor_name_1=factor_2, corr_type=HALFLIFES),
+            'vol_1': draw_volatility(factor_data.vol, factor_name=factor_1, vol_type=HALFLIFES),
+            'vol_2': draw_volatility(factor_data.vol, factor_name=factor_2, vol_type=HALFLIFES),
             }
 
     for fig in figs.values():
@@ -25,12 +26,8 @@ def build_dashboard_vol(factor_data):
         st.table(summarize_memory_usage())
 
 
-if STREAMLIT_CACHE:
-    halflifes = [126] 
-else:
-    halflifes = [21, 63, 126, 252, 512]
-factor_data = get_factor_data(halflifes, streamlit=STREAMLIT_CACHE)
-
-build_dashboard_vol(factor_data)
-
-del(factor_data)
+if __name__ == "__main__":
+    # factor_data = get_factor_data(HALFLIFES, streamlit=STREAMLIT_CACHE)
+    factor_data = build_factor_data(HALFLIFES)
+    build_dashboard_vol(factor_data)
+    del(factor_data)
