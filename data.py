@@ -8,7 +8,7 @@ import xarray as xr
 import yfinance as yf
 
 # from data import get_factor_master, get_yf_data
-from util import xr_pct_change, safe_reindex, cache_to_file, cache_to_arraylake, new_cache, business_days_ago
+from util import xr_pct_change, safe_reindex, cache_to_file, cache_to_arraylake, new_cache, business_days_ago, cache_gpt
 from stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from config import HALFLIFES
 
@@ -178,7 +178,8 @@ def get_factor_data2(source, halflifes=None, **kwargs) -> xr.Dataset:
 
 
 # @cache_to_arraylake
-@cache_to_file
+# @cache_to_file
+@cache_gpt('arraylake')
 def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
     # TODO: Check vol units
     factor_master = get_factor_master('factor_master.xlsx', factor_set)
@@ -275,3 +276,7 @@ def align_indices(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, p
 # # Align indices before joining
 # factor_ret_aligned, portfolio_ret_aligned = align_indices(factor_ret, portfolio_ret)
 # combined_ret = factor_ret_aligned.join(portfolio_ret_aligned, how='outer')
+
+
+
+
