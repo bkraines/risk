@@ -5,11 +5,15 @@ import psutil
 import functools
 import pickle
 
+from pandas.tseries.offsets import BDay
+
 import pandas as pd
 import xarray as xr
 import arraylake as al
+import streamlit as st
 
 from config import CACHE_DIR, ARRAYLAKE_REPO
+
 
 def safe_reindex(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     assert df1.index.isin(df2.index).all()
@@ -107,18 +111,22 @@ def read_arraylake(repo_name: str | None = None) -> xr.Dataset:
     client = al.Client()
     repo = client.get_repo(repo_name)
     session = repo.readonly_session("main")
+    print(f"Reading from {repo_name}")
     return xr.open_zarr(session.store, consolidated=False)
 
 def write_arraylake(ds: xr.Dataset, repo_name: str | None = None,
-                    commit_message: str = 'Update dataset') -> None:
+                    commit_message: str = 'Update dataset',
+                    append_dim='date') -> None:
     if repo_name is None:
         repo_name = ARRAYLAKE_REPO
     client = al.Client()
     repo = client.get_repo(repo_name)
     session = repo.writable_session("main")
-    ds.to_zarr(session.store, mode='a', consolidated=False)
+    ds.to_zarr(session.store, mode='a', consolidated=False, append_dim=append_dim)
     session.commit(commit_message)
+    print(f"Committed {commit_message} to {repo_name}")
 
+# @functools.wraps
 def cache_to_arraylake(func: Callable) -> Callable:
     # TODO: complete this function
     # TODO: check staleness by just querying date, not whole dataset
@@ -144,6 +152,24 @@ def cache_to_arraylake(func: Callable) -> Callable:
     return wrapper
 
 
+def new_cache(target: str) -> Callable:
+    
+    def middle(func):
+        if target == 'local':
+            return cache_to_file(func)
+        elif target == 'arraylake':
+            return cache_to_arraylake(func)
+        elif target == 'streamlit':
+            return st.cache_data(func)
+        else:
+            raise ValueError(f"Unsupported cache target: {target}")
+    
+    return middle
+
+
+
+
+# @functools.wraps
 def cache_to_file(func: Callable) -> Callable:
     """
     A decorator to cache the result of a function to a file. If the cache file exists, 
@@ -192,6 +218,7 @@ def cache_to_file(func: Callable) -> Callable:
     >>> result = expensive_function(2)
     """
     # TODO: Complete arraylake cache... or actually make a different decorator
+    # Default xarray objects to zarr and others to pkl
     def wrapper(*args: List[Any], 
                 read_cache=True, write_cache=True, 
                 cache_dir=None, cache_file=None, 
@@ -219,3 +246,7 @@ def cache_to_file(func: Callable) -> Callable:
                 write_file(data, cache_path, file_type)
         return data
     return wrapper
+
+
+def business_days_ago(n=1):
+    return (pd.Timestamp.today() - BDay(n)).date()

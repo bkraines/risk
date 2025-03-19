@@ -8,7 +8,7 @@ import xarray as xr
 import yfinance as yf
 
 # from data import get_factor_master, get_yf_data
-from util import xr_pct_change, safe_reindex, cache_to_file, cache_to_arraylake
+from util import xr_pct_change, safe_reindex, cache_to_file, cache_to_arraylake, new_cache, business_days_ago
 from stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from config import HALFLIFES
 
@@ -119,19 +119,65 @@ def build_dataset_with_composites(halflifes: List[int]) -> xr.Dataset:
 
 def is_data_current(factor_data: xr.Dataset) -> bool:
     date_latest = factor_data.indexes['date'].max()
-    date_today = pd.Timestamp(datetime.today().date())
-    return date_latest >= date_today
+    date_prior  = business_days_ago(1) 
+    # date_today = pd.Timestamp(datetime.today().date())
+    return date_latest >= date_prior
 
 
-@st.cache_data
-def get_factor_data_streamlit(halflifes):
-    return build_factor_data(halflifes, read_cache=False, write_cache=False)
+def get_factor_data(source: str, **kwargs) -> xr.Dataset:
+    """Retrieve factor data from a specified source with optional halflife settings."""
+    
+    kwargs.setdefault("halflifes", HALFLIFES)  # Ensure 'halflifes' has a default if missing
 
-@cache_to_arraylake
-def get_factor_data_arraylake(halflifes):
-    return build_factor_data(halflifes, read_cache=False, write_cache=False)
+    # Mapping sources to their respective decorators
+    decorator_map = {
+        "streamlit": st.cache_data,
+        "arraylake": cache_to_arraylake,
+        "local":     cache_to_file,
+    }
+
+    if source not in decorator_map:
+        raise ValueError(f"Invalid source: {source}. Choose from {list(decorator_map.keys())}")
+
+    # Inject additional parameters if source is 'local'
+    if source == "local":
+        kwargs.setdefault("check", is_data_current)
+        kwargs.setdefault("file_type", "zarr")
+
+    # Apply the appropriate decorator dynamically
+    cached_build_factor_data = decorator_map[source](build_factor_data)
+    
+    return cached_build_factor_data(**kwargs)
 
 
+def get_factor_data2(source, halflifes=None, **kwargs) -> xr.Dataset:
+    
+    kwargs.setdefault("halflifes", HALFLIFES)
+
+    @st.cache_data
+    def get_factor_data_streamlit(**kwargs):
+        return build_factor_data(**kwargs)
+
+    @cache_to_arraylake
+    def get_factor_data_arraylake(**kwargs):
+        return build_factor_data(**kwargs)
+
+    @cache_to_file
+    def get_factor_data_local(**kwargs):
+        return build_factor_data(**kwargs)    
+    
+    match source:
+        case 'streamlit':
+            return get_factor_data_streamlit(**kwargs)
+        case 'arraylake':
+            return get_factor_data_arraylake(**kwargs)
+        case 'local':
+            return get_factor_data_local(check=is_data_current, file_type='zarr', **kwargs)
+        case _:
+            raise ValueError('Invalid source')
+
+
+# @cache_to_arraylake
 @cache_to_file
 def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
     # TODO: Check vol units
@@ -181,6 +227,10 @@ def get_factor_data(halflifes: Optional[List[int]] = None, factor_set='read', st
     #       e.g. @cache_to_file(check=is_data_stale)
     #       Maybe this is simpler?
     # TODO: Include arraylake cache
+    
+    @st.cache_data
+    def get_factor_data_streamlit(**kwargs):
+        return build_factor_data(**kwargs)
     
     if halflifes is None:
         halflifes = HALFLIFES
