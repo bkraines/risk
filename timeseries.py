@@ -1,9 +1,9 @@
 import streamlit as st
 
-from data import get_factor_data, build_factor_data
+from data import get_factor_data
 from chart import draw_volatility, draw_correlation
 from util import check_memory_usage, summarize_memory_usage
-from config import STREAMLIT_CACHE, HALFLIFES
+from config import HALFLIFES
 
 
 def build_dashboard_vol(factor_data):
@@ -27,7 +27,6 @@ def build_dashboard_vol(factor_data):
 
 
 if __name__ == "__main__":
-    # factor_data = get_factor_data(HALFLIFES, streamlit=STREAMLIT_CACHE)
-    factor_data = build_factor_data(HALFLIFES)
+    factor_data = get_factor_data()
     build_dashboard_vol(factor_data)
     del(factor_data)
