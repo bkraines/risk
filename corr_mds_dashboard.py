@@ -1,7 +1,7 @@
 import streamlit as st
 
-from config import STREAMLIT_CACHE, HALFLIFES
-from data import get_factor_data, build_factor_data
+from config import HALFLIFES
+from data import get_factor_data
 from corr_mds import run_mds
 from util import check_memory_usage, summarize_memory_usage
 
@@ -26,6 +26,6 @@ def build_streamlit_dashboard(factor_data):
 
 
 if __name__ == "__main__":
-    factor_data = build_factor_data(HALFLIFES)
+    factor_data = get_factor_data(HALFLIFES)
     build_streamlit_dashboard(factor_data)
     del(factor_data)

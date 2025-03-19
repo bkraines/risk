@@ -1,12 +1,8 @@
 import streamlit as st
 from util import format_date, check_memory_usage, summarize_memory_usage
-from data import get_factor_data, build_factor_data
+from data import get_factor_data
 from market_feedback import draw_market_feedback_scatter
-from config import STREAMLIT_CACHE, HALFLIFES
-
-# @st.cache_data
-# def get_factor_data_streamlit(HALFLIFES):
-#     return build_factor_data(HALFLIFES):, read_cache=False, write_cache=False)
+from config import HALFLIFES
 
 def build_streamlit_dashboard(factor_data):
     # TODO: Add peak memory usage (before deleting factor_data)
@@ -31,6 +27,6 @@ def build_streamlit_dashboard(factor_data):
 
 
 if __name__ == "__main__":
-    factor_data = build_factor_data(HALFLIFES) #, streamlit=STREAMLIT_CACHE)
+    factor_data = get_factor_data()
     build_streamlit_dashboard(factor_data)
     del(factor_data)

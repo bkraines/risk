@@ -1,18 +1,15 @@
-from typing import Optional, List
-from datetime import datetime
+from typing import List
 
-import streamlit as st
 import pandas as pd
 import xarray as xr
 
 import yfinance as yf
 
-# from data import get_factor_master, get_yf_data
-from util import xr_pct_change, safe_reindex, cache_to_file, cache_to_arraylake, new_cache, business_days_ago, cache_gpt, cache
+from util import xr_pct_change, safe_reindex, business_days_ago, cache
 from stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
-from config import CACHE_TARGET, HALFLIFES
+from config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME
 
-def get_yahoo_data(ticker, field_name, cache=None):
+def get_yahoo_data(ticker, field_name):
     # TODO: Check cache first
     # cache.columns.get_level_values(1)
     return yf.download(ticker, auto_adjust=False)[field_name].squeeze()
@@ -40,6 +37,16 @@ def get_yf_data(asset_list: List[str]) -> xr.DataArray:
             )
     df.columns = pd.CategoricalIndex(df.columns, categories=asset_list, ordered=True)
     ds = df.stack().to_xarray()
+    assert isinstance(ds, xr.DataArray), f"Expected DataArray, got {type(ds)}"
+    return ds
+
+
+def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
+    # TODO: Combine with get_factor_data
+    ds = xr.Dataset()
+    ds['ohlcv'] = get_yf_data(asset_list)
+    ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
+    ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
     return ds
 
 
@@ -60,129 +67,15 @@ def get_portfolios(filename: str = 'factor_master.xlsx', sheet_name: str = 'read
             )
 
 
-def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
-    # TODO: Combine with get_factor_data
-    ds = xr.Dataset()
-    ds['ohlcv'] = get_yf_data(asset_list)
-    ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
-    ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
-    return ds
-
-
-# deprecate
-# def get_factor_data(asset_list: List[str], halflifes: List[int]) -> xr.Dataset:
-def get_factor_data_old(halflifes: Optional[List[int]] = None) -> xr.Dataset:
-    if halflifes == None:
-        halflifes = [21, 63, 126, 252, 512]
-    
-    factor_master = get_factor_master(sheet_name='read_nocomposite')
-    asset_list = factor_master.index.to_list()
-    
-    ds = xr.Dataset()
-    ds['ohlcv'] = get_yf_data(asset_list) #.to_dataset(name='ohlcv')
-    
-    # ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
-    ds['ret']   = (ds['ohlcv']
-                   .sel(ohlcv_type='adj close')
-                   .ffill(dim='date')
-                   .pipe(xr_pct_change, 'date'))
-    ds['vol']   = get_volatility_set(ds['ret'], halflifes)
-    ds['corr']  = get_correlation_set(ds['ret'], halflifes)
-    
-    ds['asset'].attrs = factor_master.T.to_dict()
-    return ds
-
-# deprecate
-def build_dataset_with_composites(halflifes: List[int]) -> xr.Dataset:
-    # Here `assets` refer to factors built from single security (basis vectors)
-    # Here `portfolios` refer to factors built from `assets`
-    # TODO: Rename to get_factor_data_with_composites
-    
-    factor_master = get_factor_master(sheet_name='read')
-    asset_list = factor_master.loc[factor_master['composite'] == 0].index.to_list()
-    asset_data = get_yf_returns(asset_list)
-    asset_ret = asset_data['ret'].fillna(0).to_pandas()
-    
-    portfolios_weights = get_portfolios().pipe(safe_reindex, factor_master).fillna(0).loc[asset_list]  
-    portfolios_ret = asset_ret @ portfolios_weights
-
-    factor_data = xr.Dataset()
-    factor_data['ret']   = pd.concat([asset_ret, portfolios_ret], axis=1).rename_axis(columns='asset')
-    # factor_data['ret'] = (pd.concat([asset_ret['MWTIX'], portfolios_ret, asset_ret.drop(columns=['MWTIX'])], axis=1).rename_axis(columns='asset'))
-    factor_data['vol']   = get_volatility_set(factor_data['ret'], halflifes)
-    factor_data['corr']  = get_correlation_set(factor_data['ret'], halflifes)
-    factor_data['cret']  = factor_data['ret'].cumsum(dim='date') # TODO: Drop zeros from the beginning
-
-    factor_data['asset'].attrs = factor_master.T.to_dict()
-
-    return factor_data
-
-
-def is_data_current(factor_data: xr.Dataset) -> bool:
-    date_latest = factor_data.indexes['date'].max().date()
+def is_data_current(ds: xr.Dataset) -> bool:
+    date_latest = ds.indexes['date'].max().date()
     date_prior  = business_days_ago(1)
-    # date_today = pd.Timestamp(datetime.today().date())
     return date_latest >= date_prior
 
 
-def get_factor_data(source: str, **kwargs) -> xr.Dataset:
-    """Retrieve factor data from a specified source with optional halflife settings."""
-    
-    kwargs.setdefault("halflifes", HALFLIFES)  # Ensure 'halflifes' has a default if missing
-
-    # Mapping sources to their respective decorators
-    decorator_map = {
-        "streamlit": st.cache_data,
-        "arraylake": cache_to_arraylake,
-        "local":     cache_to_file,
-    }
-
-    if source not in decorator_map:
-        raise ValueError(f"Invalid source: {source}. Choose from {list(decorator_map.keys())}")
-
-    # Inject additional parameters if source is 'local'
-    if source == "local":
-        kwargs.setdefault("check", is_data_current)
-        kwargs.setdefault("file_type", "zarr")
-
-    # Apply the appropriate decorator dynamically
-    cached_build_factor_data = decorator_map[source](build_factor_data)
-    
-    return cached_build_factor_data(**kwargs)
-
-
-def get_factor_data2(source, halflifes=None, **kwargs) -> xr.Dataset:
-    
-    kwargs.setdefault("halflifes", HALFLIFES)
-
-    @st.cache_data
-    def get_factor_data_streamlit(**kwargs):
-        return build_factor_data(**kwargs)
-
-    @cache_to_arraylake
-    def get_factor_data_arraylake(**kwargs):
-        return build_factor_data(**kwargs)
-
-    @cache_to_file
-    def get_factor_data_local(**kwargs):
-        return build_factor_data(**kwargs)    
-    
-    match source:
-        case 'streamlit':
-            return get_factor_data_streamlit(**kwargs)
-        case 'arraylake':
-            return get_factor_data_arraylake(**kwargs)
-        case 'local':
-            return get_factor_data_local(check=is_data_current, file_type='zarr', **kwargs)
-        case _:
-            raise ValueError('Invalid source')
-
-
-# @cache_to_arraylake
-# @cache_to_file
-# @cache_gpt(CACHE_TARGET)
 @cache(CACHE_TARGET)
 def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
+    # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
     factor_master = get_factor_master('factor_master.xlsx', factor_set)
     factor_list = factor_master.index
@@ -221,64 +114,15 @@ def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
     return factor_data #, diffusion_map, levels_latest
 
 
-def get_factor_data(halflifes: Optional[List[int]] = None, factor_set='read', streamlit=False, **kwargs) -> xr.Dataset:
-    # TODO: Change `streamlit=False` to `target: 'streamlit' | 'arraylake' | None = None`
-    '''
-    Cache build_factor_data to disk (with staleness check) or streamlit
-    '''
-    # TODO: Consider refactoring check to be argument of decorator,
-    #       e.g. @cache_to_file(check=is_data_stale)
-    #       Maybe this is simpler?
-    # TODO: Include arraylake cache
-    
-    @st.cache_data
-    def get_factor_data_streamlit(**kwargs):
-        return build_factor_data(**kwargs)
-    
-    if halflifes is None:
-        halflifes = HALFLIFES
-    if streamlit:
-        data = get_factor_data_streamlit(halflifes)
-    else:
-        data =  build_factor_data(halflifes, 
-                                  factor_set, 
-                                  check=is_data_current,
-                                  file_type='zarr',
-                                  **kwargs)
-    return data
-
-
-
-def align_indices(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Align the indices of two DataFrames to ensure they can be joined without errors.
-    
-    Parameters
-    ----------
-    df1 : pd.DataFrame
-        The first DataFrame.
-    df2 : pd.DataFrame
-        The second DataFrame.
-    
-    Returns
-    -------
-    (pd.DataFrame, pd.DataFrame)
-        The two DataFrames with aligned indices.
-    """
-    common_index = df1.index.union(df2.index)
-    return df1.reindex(common_index), df2.reindex(common_index)
-
-
-# # Example usage:
-# factor_data = get_factor_data()
-# factor_ret = factor_data.ret.to_pandas().fillna(0)
-# portfolios = get_portfolios()
-# portfolio_ret = factor_ret @ portfolios
-
-# # Align indices before joining
-# factor_ret_aligned, portfolio_ret_aligned = align_indices(factor_ret, portfolio_ret)
-# combined_ret = factor_ret_aligned.join(portfolio_ret_aligned, how='outer')
-
-
+def get_factor_data(**kwargs) -> xr.Dataset:
+    kwargs.setdefault("halflifes", HALFLIFES)
+    match CACHE_TARGET:
+        case 'disk':
+            kwargs.setdefault("check", is_data_current)
+            kwargs.setdefault("file_type", "zarr")
+            kwargs.setdefault("cache_file", CACHE_FILENAME)
+        case 'arraylake':
+            kwargs.setdefault("check", is_data_current)
+    return build_factor_data(**kwargs)
 
 

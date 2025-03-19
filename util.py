@@ -130,135 +130,16 @@ def write_arraylake(ds: xr.Dataset, repo_name: str | None = None,
     client = al.Client()
     repo = client.get_repo(repo_name)
     session = repo.writable_session("main")
-    ds.to_zarr(session.store, mode='a', consolidated=False, append_dim=append_dim)
+    ds.to_zarr(session.store, mode='a', consolidated=False, append_dim=append_dim) #, chunks='auto')
     session.commit(commit_message)
     print(f"Committed {commit_message} to {repo_name}")
-
-# @functools.wraps
-def cache_to_arraylake(func: Callable) -> Callable:
-    # TODO: complete this function
-    # TODO: check staleness by just querying date, not whole dataset
-    def wrapper(*args: List[Any], 
-                read_cache: bool = True, 
-                write_cache: bool = True, 
-                repo_name: str | None = None, 
-                check: Callable | None = None,
-                **kwargs: List[Any]) -> Any:
-        if check is None:
-            check = lambda x: True
-        if read_cache:
-            data = read_arraylake(repo_name)
-            if not check(data):
-                data = func(*args, **kwargs)
-            if write_cache:
-                write_arraylake(data, repo_name)
-        else:
-            data = func(*args, **kwargs)
-            if write_cache:
-                write_arraylake(data, repo_name)
-        return data
-    return wrapper
-
-
-def new_cache(target: str) -> Callable:
-    
-    def middle(func):
-        if target == 'local':
-            return cache_to_file(func)
-        elif target == 'arraylake':
-            return cache_to_arraylake(func)
-        elif target == 'streamlit':
-            return st.cache_data(func)
-        else:
-            raise ValueError(f"Unsupported cache target: {target}")
-    
-    return middle
-
-
-# @functools.wraps
-def cache_to_file(func: Callable) -> Callable:
-    """
-    A decorator to cache the result of a function to a file. If the cache file exists, 
-    the result is read from the file instead of calling the function. If the cache file 
-    does not exist, the function is called and the result is written to the cache file.
-
-    Parameters
-    ----------
-    func : Callable
-        The function to be decorated.
-    *args : List[Any]
-        Positional arguments to pass to the function.
-    read_cache : bool, optional
-        Whether to read from the cache if it exists. Defaults to True.
-    write_cache : bool, optional
-        Whether to write the result to the cache. Defaults to True.
-    cache_dir : str, optional
-        Directory where the cache file is stored. Defaults to 'cache'.
-    cache_file : str, optional
-        Name of the cache file. Defaults to None, which means the cache file name will be derived from the function name.
-    check : callable, optional
-        A function to validate the cached data. Defaults to a function that always returns True. If False, the function will be recomputed.
-    file_type : Literal['pkl', 'zarr'], optional
-        The file type for the cache file. Defaults to 'pkl'.
-    **kwargs : List[Any]
-        Keyword arguments to pass to the function.
-
-    Returns
-    -------
-    Callable
-        The result of the function, either from the cache or freshly computed.
-
-    Notes
-    -----
-    The cache file is stored in the specified cache directory with a default name 
-    based on the function name and a specified file type extension (default is '.pkl'). 
-    The cache directory, file name, and file type can be customized through the 
-    decorator's parameters.
-
-    Examples
-    --------
-    >>> @cache_to_file
-    ... def expensive_function(x):
-    ...     # Some expensive computation
-    ...     return x * x
-    >>> result = expensive_function(2)
-    """
-    # TODO: Complete arraylake cache... or actually make a different decorator
-    # Default xarray objects to zarr and others to pkl
-    def wrapper(*args: List[Any], 
-                read_cache=True, write_cache=True, 
-                cache_dir=None, cache_file=None, 
-                check=None,
-                file_type: Literal['pkl', 'zarr'] = 'pkl',
-                **kwargs: List[Any]) -> Any:
-        
-        if cache_dir is None:
-            cache_dir = CACHE_DIR
-        if check is None:
-            check = lambda x: True
-        if cache_file is None:
-            cache_file = f'{func.__name__}.{file_type}'
-        cache_path = os.path.join(cache_dir, cache_file)
-        
-        if read_cache and os.path.exists(cache_path):
-            data = read_file(cache_path, file_type)
-            if not check(data):
-                data = func(*args, **kwargs) # TODO: pass read_cache=False
-                if write_cache:
-                    write_file(data, cache_path, file_type)
-        else:
-            data = func(*args, **kwargs)
-            if write_cache:
-                write_file(data, cache_path, file_type)
-        return data
-    return wrapper
 
 
 def business_days_ago(n=1):
     return (pd.Timestamp.today() - BDay(n)).date()
 
 
-def _cache_to_disk(func, *args, read_cache=True, write_cache=True, cache_dir='cache', cache_file=None, check=None, file_type='zarr', **kwargs):
+def _cache_to_disk(func, *args, read_cache=True, write_cache=True, cache_dir=CACHE_DIR, cache_file=None, check=None, file_type='zarr', **kwargs):
     if check is None:
         check = lambda x: True
     # TODO: Think about default cache file type. 
@@ -304,6 +185,7 @@ def _cache_to_arraylake(func, *args, read_cache=True, write_cache=True, repo_nam
             write_arraylake(data, repo_name)
     return data
 
+# @functools.wraps
 def cache(target: Literal['disk', 'arraylake', 'streamlit'] = 'disk') -> Callable:
     # TODO: Understand and document streamlit staleness logic
     """
@@ -371,7 +253,7 @@ def cache(target: Literal['disk', 'arraylake', 'streamlit'] = 'disk') -> Callabl
         def wrapper(*args:       List[Any], 
                     read_cache:  bool = True, 
                     write_cache: bool = True, 
-                    cache_dir:   str = 'cache', 
+                    cache_dir:   str = CACHE_DIR, 
                     cache_file:  Optional[str] = None, 
                     repo_name:   Optional[str] = None, 
                     check:       Optional[Callable] = None, 
@@ -393,3 +275,23 @@ def cache(target: Literal['disk', 'arraylake', 'streamlit'] = 'disk') -> Callabl
 
         return wrapper
     return decorator
+
+
+def align_indices(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Align the indices of two DataFrames to ensure they can be joined without errors.
+    
+    Parameters
+    ----------
+    df1 : pd.DataFrame
+        The first DataFrame.
+    df2 : pd.DataFrame
+        The second DataFrame.
+    
+    Returns
+    -------
+    (pd.DataFrame, pd.DataFrame)
+        The two DataFrames with aligned indices.
+    """
+    common_index = df1.index.union(df2.index)
+    return df1.reindex(common_index), df2.reindex(common_index)
