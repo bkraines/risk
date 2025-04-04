@@ -113,7 +113,7 @@ def write_file(obj: Any, path: str, type: str) -> None:
                  'zarr': write_zarr}
     return type_dict[type](obj, path)
 
-def read_arraylake(repo_name: str | None = None) -> xr.Dataset:
+def read_arraylake(repo_name: Optional[str] = None) -> xr.Dataset:
     if repo_name is None:
         repo_name = ARRAYLAKE_REPO
     client = al.Client()
@@ -122,7 +122,7 @@ def read_arraylake(repo_name: str | None = None) -> xr.Dataset:
     print(f"Reading from {repo_name}")
     return xr.open_zarr(session.store, consolidated=False)
 
-def write_arraylake(ds: xr.Dataset, repo_name: str | None = None,
+def write_arraylake(ds: xr.Dataset, repo_name: Optional[str] = None,
                     commit_message: str = 'Update dataset',
                     append_dim='date') -> None:
     if repo_name is None:

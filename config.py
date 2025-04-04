@@ -9,7 +9,7 @@ CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'streamlit'
 STREAMLIT_CACHE = False
 
 # In case of `streamlit` caching, limit RAM usage by restricting `HALFLIFES`
-# Unnecessary after `arraylake` caching is fully implemented
+# TODO: Remove once `arraylake` caching is fully implemented
 if STREAMLIT_CACHE or (CACHE_TARGET == 'streamlit'):
     HALFLIFES = [126]
 else:

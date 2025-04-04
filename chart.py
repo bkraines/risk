@@ -7,9 +7,14 @@ import pandas as pd
 import xarray as xr
 
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
+from plotly.subplots import make_subplots
 
 from config import IMAGE_DIR
+
+# TODO: Pull ploty template into a constant:
+PLOTLY_TEMPLATE = 'plotly_white'
 
 
 def px_write(fig, filename, directory=IMAGE_DIR):
@@ -40,6 +45,7 @@ def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotat
 
 def px_line(da: xr.DataArray, x: str, y: str, color: Union[str, None] = None, title: Union[str, None] = None, 
             x_title: bool = False, y_title: bool = False, fig_format: Union[dict, None] = None) -> Figure:
+    # TODO: This should take a Series instead of a DataArray
     fig_format_default = {'template': 'plotly_white', 'height': 500, 'width': 1000}
     fig_format = {**fig_format_default, **(fig_format or {})}
     df = da.to_series().reset_index()
@@ -102,6 +108,80 @@ def px_scatter(df, x, y, color_map_override=None, **kwargs):
     asset_class_list = color_map_override.keys()
     fig.for_each_trace(lambda t: t.update(textfont_color = get_trace_color(t, asset_class_list)))
 
+    return fig
+
+
+
+
+def plot_dual_axis(series1: pd.Series, series2: pd.Series, 
+                   label1='Series 1', label2='Series 2', 
+                   title='Dual Axis Plot'):
+    """
+    Plot two time series on the same x-axis with separate y-axes,
+    and match y-axis colors to line colors (automatically selected).
+
+    Args:
+        series1 (pd.Series): Time series for the primary y-axis.
+        series2 (pd.Series): Time series for the secondary y-axis.
+        label1 (str): Label for the primary y-axis series.
+        label2 (str): Label for the secondary y-axis series.
+        title (str): Plot title.
+    """
+    # TODO: Clean up this ChatGPT output
+    # TODO: Draw primary line with `px_line` to inherit formatting
+    
+    # Get default Plotly color sequence
+    default_colors = pio.templates['plotly_white'].layout.colorway
+    color1 = default_colors[0]
+    color2 = default_colors[1]
+
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig.add_trace(
+        go.Scatter(x=series1.index, y=series1.values, name=label1, line=dict(color=color1)),
+        secondary_y=False
+    )
+
+    fig.add_trace(
+        go.Scatter(x=series2.index, y=series2.values, name=label2, line=dict(color=color2)), #, dash='dash')),
+        secondary_y=True
+    )
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Date',
+        legend=dict(x=0.01, y=0.99),
+        hovermode='x unified',
+        template='plotly_white',
+        width=1000,
+        height=500,
+    )
+
+    # Style y-axes
+    fig.update_yaxes(
+        title_text=label1,
+        title_font=dict(color=color1),
+        tickfont=dict(color=color1),
+        showgrid=False,
+        secondary_y=False
+    )
+
+    fig.update_yaxes(
+        title_text=label2,
+        title_font=dict(color=color2),
+        tickfont=dict(color=color2),
+        showgrid=False,
+        secondary_y=True
+    )
+
+    return fig
+
+def draw_cumulative_return(da, factor_name, factor_name_1):
+    # TODO: Scale secondary factor to same units as primary factor given a start date
+    #       Alternatively, start both at 100
+    df1 = da.sel(factor_name=factor_name).to_series()
+    df2 = da.sel(factor_name=factor_name_1).to_series()
+    fig = plot_dual_axis(df1, df2, label1=factor_name, label2=factor_name_1, title=f'{factor_name} vs {factor_name_1}')
     return fig
 
 
