@@ -84,8 +84,8 @@ def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
 
     factor_list_yf = factor_master.query('source=="yfinance"').index
     levels_yf = (get_yahoo_data_set(asset_names = factor_list_yf.tolist(), 
-                                     tickers = factor_master.loc[factor_list, 'ticker'],
-                                     field_name = 'Adj Close')
+                                    tickers = factor_master.loc[factor_list, 'ticker'],
+                                    field_name = 'Adj Close')
                  .pipe(align_dates, ['SPY'])
                  )
 
