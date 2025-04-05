@@ -1,5 +1,5 @@
 import streamlit as st
-from util import format_date, check_memory_usage, summarize_memory_usage
+from util import format_date, check_memory_usage, summarize_memory_usage, select_date_range
 from data import get_factor_data
 from market_feedback import draw_market_feedback_scatter
 from config import HALFLIFES
@@ -11,8 +11,9 @@ def build_streamlit_dashboard(factor_data):
 
     with st.sidebar:
         corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)
-        return_start = st.date_input('Start', value='2024-12-31') #, on_change)
-        return_end   = st.date_input('End', value='today')
+        return_start, return_end = select_date_range(factor_data.indexes['date'])
+        # return_start = st.date_input('Start', value='2024-12-31') #, on_change)
+        # return_end   = st.date_input('End', value='today')
         vol_type     = st.selectbox('Volatility Halflife', options=HALFLIFES, index=0)
         corr_type    = st.selectbox('Correlation Halflife', options=HALFLIFES, index=0)
 
