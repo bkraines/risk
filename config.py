@@ -18,17 +18,16 @@ else:
     HALFLIFES = [21, 63, 126, 252, 512]
 
 # Trailing windows
-TRAILING_WINDOWS = {
-    "1d": 1,
-    "5d": 5,
-    "1m": 21,
-    "3m": 63,
-    "6m": 126,
-    "1y": 252,
-    "3y": 252 * 3,
-    "5y": 252 * 5,
-    "10y": 252 * 10,
-}
+TRAILING_WINDOWS = {"1d":  1,
+                    "5d":  5,
+                    "1m":  21,
+                    "3m":  63,
+                    "6m":  126,
+                    "1y":  252,
+                    "3y":  252 * 3,
+                    "5y":  252 * 5,
+                    "10y": 252 * 10,
+                    }
 
 # Named historical event ranges
 MARKET_EVENTS = {
@@ -61,4 +60,16 @@ MARKET_EVENTS = {
     # Other Thematic Episodes
     "ARK Mania":         (datetime(2020, 4, 1), datetime(2021,  2, 12)),
     "Tech Wreck (2022)": (datetime(2022, 1, 1), datetime(2022, 10, 15)),
+}
+
+
+def get_mtd_range(today: datetime) -> tuple[datetime, datetime]:
+    return today.replace(day=1), today
+
+def get_ytd_range(today: datetime) -> tuple[datetime, datetime]:
+    return today.replace(month=1, day=1), today
+
+TO_DATE_WINDOWS = {
+    "MTD": get_mtd_range,
+    "YTD": get_ytd_range,
 }

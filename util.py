@@ -14,7 +14,7 @@ import xarray as xr
 import streamlit as st
 
 from config import CACHE_DIR, ARRAYLAKE_REPO
-from config import TRAILING_WINDOWS, NAMED_RANGES
+from config import TRAILING_WINDOWS, MARKET_EVENTS
 
 
 # Patch `pydantic`, used by `streamlit` server, which doesn't recognize `DBIDBytes` type from `arraylake`.
@@ -23,7 +23,7 @@ from pydantic import BaseModel
 class MyModel(BaseModel):
     db_id: "DBIDBytes"  # Quotes to prevent forward reference errors
     class Config:
-        arbitrary_types_allowed = True  # ✅ Allows unrecognized types
+        arbitrary_types_allowed = True  # Allows unrecognized types
 import arraylake as al
 
 
@@ -302,27 +302,29 @@ def align_indices(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, p
 
 
 
+def get_mtd_range(today: datetime) -> tuple[datetime, datetime]:
+    return today.replace(day=1), today
 
-import streamlit as st
-from datetime import datetime
-from typing import Iterable, Tuple, Optional, Dict
+def get_ytd_range(today: datetime) -> tuple[datetime, datetime]:
+    return today.replace(month=1, day=1), today
 
-from config import TRAILING_WINDOWS, NAMED_RANGES
+TO_DATE_WINDOWS = {
+    "MTD": get_mtd_range,
+    "YTD": get_ytd_range,
+}
 
-import streamlit as st
-from datetime import datetime
-from typing import Iterable, Tuple, Optional, Dict
 
-from config import TRAILING_WINDOWS, MARKET_EVENTS
+from config import TRAILING_WINDOWS, MARKET_EVENTS, TO_DATE_WINDOWS
 
 def select_date_range(
     date_list: Iterable[datetime],
     trailing_windows: Optional[Dict[str, int]] = TRAILING_WINDOWS,
     market_events: Optional[Dict[str, Tuple[datetime, datetime]]] = MARKET_EVENTS,
+    to_date_windows: Optional[Dict[str, Callable[[datetime], Tuple[datetime, datetime]]]] = TO_DATE_WINDOWS,
     default_option: Optional[str] = None,
 ) -> Tuple[datetime, datetime]:
     """
-    Display a Streamlit UI to select a date range from trailing windows, named ranges, or a custom picker.
+    Display a Streamlit UI to select a date range from trailing windows, named ranges, to-date periods, or a custom picker.
 
     Parameters
     ----------
@@ -332,6 +334,8 @@ def select_date_range(
         Mapping of trailing window labels to their respective lengths (e.g., "1y": 252).
     market_events : Optional[Dict[str, Tuple[datetime, datetime]]]
         Mapping of named event labels to specific (start, end) date tuples.
+    to_date_windows : Optional[Dict[str, Callable[[datetime], Tuple[datetime, datetime]]]]
+        Mapping of to-date labels (e.g., "YTD", "MTD") to callables producing (start, end) dates.
     default_option : Optional[str]
         Preferred default selection in the dropdown. Defaults to 'max' if not found.
 
@@ -344,6 +348,8 @@ def select_date_range(
         trailing_windows = {}
     if market_events is None:
         market_events = {}
+    if to_date_windows is None:
+        to_date_windows = {}
 
     date_list = sorted(date_list)
     if not date_list:
@@ -352,6 +358,7 @@ def select_date_range(
 
     default_start = date_list[0]
     default_end = date_list[-1]
+    today = default_end
 
     def get_start_date_n_periods_ago(n: int) -> datetime:
         idx = max(0, len(date_list) - (n + 1))
@@ -367,7 +374,12 @@ def select_date_range(
         for label, n in trailing_windows.items()
     }
 
-    all_date_options = static_ranges | trailing_ranges | market_events
+    to_date_ranges = {
+        label: func(today)
+        for label, func in to_date_windows.items()
+    }
+
+    all_date_options = static_ranges | trailing_ranges | to_date_ranges | market_events
     options = list(all_date_options.keys())
 
     if default_option and default_option in options:
@@ -394,4 +406,6 @@ def select_date_range(
 
         st.write(f"{start_date} to {end_date}")
 
+    # TODO: Break out Market Events into separate dropdown? Use an `optgroup` to separate the event types?
+    # TODO: Allow custom trailing windows?
     return start_date, end_date
