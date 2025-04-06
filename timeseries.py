@@ -1,8 +1,9 @@
 import streamlit as st
 
 from data import get_factor_data
+from dates import select_date_range
 from chart import draw_volatility, draw_correlation, draw_cumulative_return
-from util import check_memory_usage, summarize_memory_usage, select_date_range
+from util import check_memory_usage, summarize_memory_usage
 from config import HALFLIFES
 
 
