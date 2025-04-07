@@ -31,7 +31,7 @@ TRAILING_WINDOWS = {
 }
 
 # Named historical event ranges
-MARKET_EVENTS = {
+MARKET_EVENTS: dict[str, tuple[datetime, datetime]] = {
     "GFC (2008)":           (datetime(2007, 10, 1), datetime(2009, 3, 9)),
     "Eurozone Crisis":      (datetime(2011, 7, 1), datetime(2012, 9, 1)),
     "Taper Tantrum (2013)": (datetime(2013, 5, 1), datetime(2013, 9, 1)),
@@ -56,4 +56,4 @@ MARKET_EVENTS = {
 
     "ARK Mania":         (datetime(2020, 4, 1), datetime(2021, 2, 12)),
     "Tech Wreck (2022)": (datetime(2022, 1, 1), datetime(2022, 10, 15)),
-}
+} 

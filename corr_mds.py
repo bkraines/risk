@@ -1,11 +1,11 @@
-from typing import Union, Literal
+from typing import Union, Literal, Optional
 
 from numpy import sqrt, cos, sin, arctan2, array, identity
 import numpy as np
+import pandas as pd
 import xarray as xr
 xr.set_options(keep_attrs=True,
                display_expand_data=False)
-import pandas as pd
 from sklearn.manifold import MDS
 
 import plotly.express as px
@@ -26,7 +26,7 @@ def prepare_correlation(corr: xr.DataArray, transformation=None, start_date=None
 
 
 def transform_coordinates(coordinates: pd.DataFrame, transformation_type=None, factor: str = 'SPY', 
-                          factor_list = None, coordinates_initial: pd.DataFrame= None) -> pd.DataFrame:
+                          factor_list = None, coordinates_initial: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     
     def get_rotation_matrix(theta):
         return array([[cos(theta), -sin(theta)],
@@ -40,6 +40,8 @@ def transform_coordinates(coordinates: pd.DataFrame, transformation_type=None, f
     
     if transformation_type is None:
         return coordinates
+    if coordinates_initial is None:
+        coordinates_initial = coordinates
     
     if transformation_type == 'rotate':
         v = coordinates.loc[factor]

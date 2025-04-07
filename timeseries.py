@@ -17,7 +17,7 @@ def build_dashboard_vol(factor_data):
         # start_date = st.date_input('Start Date', value='2023-12-31')
         # end_date = st.date_input('End Date', value=date_latest)
         # start_date, end_date = get_date_picker(default_start=factor_data.indexes['date'].min().date())
-        start_date, end_date = select_date_range(factor_data.indexes['date'])
+        start_date, end_date = select_date_range(factor_data.indexes['date'], default_option='1y')
 
     ds = factor_data.sel(date=slice(start_date, end_date))
     figs = {'cret':  draw_cumulative_return(ds.cret, factor_name=factor_1, factor_name_1=factor_2),
