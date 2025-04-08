@@ -5,7 +5,8 @@ import xarray as xr
 
 import yfinance as yf
 
-from util import xr_pct_change, safe_reindex, business_days_ago, cache
+from dates import business_days_ago
+from util import xr_pct_change, safe_reindex, cache
 from stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME
 

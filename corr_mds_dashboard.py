@@ -9,18 +9,26 @@ def build_streamlit_dashboard(factor_data):
             'n_init': 100}
     
     with st.sidebar:
+        earliest_date = factor_data.indexes['date'].min().date()
+        latest_date = factor_data.indexes['date'].max().date()
+        end_date = st.date_input("End date", latest_date, 
+                                 min_value=earliest_date, max_value=latest_date)
         animate = st.checkbox('Animate', value=False)
-        composites = st.checkbox('Composites', value=False)
-        trump = st.checkbox('Trump', value=False)
+        composites = st.checkbox('Composites', value=True)
+        trump = st.checkbox('Trump', value=True)
     
     if animate:
-        dates = factor_data.date.sel(date=slice('2020', None)).values
+        ds = (factor_data
+              .sel(date=slice('2020', latest_date))
+              .resample(date='W').last())
+        dates = ds.date.values
         start_date = '2020'
-        ds = factor_data.resample(date='W').last()
     else:
-        dates = factor_data.date.values[[-63, -42, -21, -1]].astype('datetime64[D]').astype(str)
-        start_date = '2025'
-        ds = factor_data
+        ds = factor_data.sel(date=slice(None, end_date))
+        dates = (ds.date.values[[-63, -42, -21, -1]]
+                 .astype('datetime64[D]').astype(str))
+        start_date = dates[0]
+        
     
     fig = (run_mds(ds, 
             transformation='rotate_initial', 
@@ -32,26 +40,6 @@ def build_streamlit_dashboard(factor_data):
             drop_trump=not(trump),
             **args))
 
-    # fig = run_mds(ds, 
-    #               transformation='rotate_initial', 
-    #               dates=dates,
-    #               start_date='2020', 
-    #               tick_range=1,
-    #               animate=True,
-    #               drop_composites=True,
-    #               drop_trump=False,
-    #               **args)
-    
-    # dates = factor_data.date.sel(date=slice('2020', None)).values
-    # fig = run_mds(factor_data.resample(date='W').last(), 
-    #               transformation='rotate_initial', 
-    #               dates=dates,
-    #               start_date='2020', 
-    #               tick_range=1,
-    #               animate=True,
-    #               drop_composites=True,
-    #               drop_trump=False,
-    #               **args)
     st.write(fig)
 
     with st.sidebar:
