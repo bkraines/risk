@@ -4,7 +4,7 @@ from data import get_factor_data
 from dates import format_date, select_date_range
 from market_feedback import draw_market_feedback_scatter
 from config import HALFLIFES
-from util import check_memory_usage, summarize_memory_usage
+from interface import add_sidebar_defaults
 
 def build_streamlit_dashboard(factor_data):
     # TODO: Add peak memory usage (before deleting factor_data)
@@ -24,13 +24,12 @@ def build_streamlit_dashboard(factor_data):
     fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
 
     st.write(fig)
-
-    with st.sidebar:
-        st.write(f'Memory usage: {check_memory_usage()} MB')
-        st.table(summarize_memory_usage())
+    
+    add_sidebar_defaults()
 
 
 if __name__ == "__main__":
     factor_data = get_factor_data()
     build_streamlit_dashboard(factor_data)
+    # add_sidebar_defaults()
     del(factor_data)

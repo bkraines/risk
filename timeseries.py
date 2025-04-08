@@ -3,7 +3,7 @@ import streamlit as st
 from data import get_factor_data
 from dates import select_date_range
 from chart import draw_volatility, draw_correlation, draw_cumulative_return
-from util import check_memory_usage, summarize_memory_usage
+from interface import add_sidebar_defaults
 from config import HALFLIFES
 
 
@@ -28,12 +28,10 @@ def build_dashboard_vol(factor_data):
     for fig in figs.values():
         st.write(fig)
 
-    with st.sidebar:
-        st.write(f'Memory usage: {check_memory_usage()} MB')
-        st.table(summarize_memory_usage())
-
+    add_sidebar_defaults()
 
 if __name__ == "__main__":
     factor_data = get_factor_data()
     build_dashboard_vol(factor_data)
+    # add_sidebar_defaults()
     del(factor_data)

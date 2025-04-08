@@ -1,20 +1,14 @@
-from typing import Callable, Any, List, Literal, Optional, Iterable
+from typing import Callable, Any, List, Literal, Optional
 
 import os 
 import psutil
-import functools
 import pickle
-
-from datetime import datetime
-
-from pandas.tseries.offsets import BDay
 
 import pandas as pd
 import xarray as xr
 import streamlit as st
 
 from config import CACHE_DIR, ARRAYLAKE_REPO
-from config import TRAILING_WINDOWS, MARKET_EVENTS
 
 
 # Patch `pydantic`, used by `streamlit` server, which doesn't recognize `DBIDBytes` type from `arraylake`.
@@ -133,10 +127,6 @@ def write_arraylake(ds: xr.Dataset, repo_name: Optional[str] = None,
     ds.to_zarr(session.store, mode='a', consolidated=False, append_dim=append_dim) #, chunks='auto')
     session.commit(commit_message)
     print(f"Committed {commit_message} to {repo_name}")
-
-
-def business_days_ago(n=1):
-    return (pd.Timestamp.today() - BDay(n)).date()
 
 
 def _cache_to_disk(func, *args, read_cache=True, write_cache=True, cache_dir=CACHE_DIR, cache_file=None, check=None, file_type='zarr', **kwargs):
@@ -296,3 +286,26 @@ def align_indices(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, p
     common_index = df1.index.union(df2.index)
     return df1.reindex(common_index), df2.reindex(common_index)
 
+
+def move_columns_to_front(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
+    """
+    Reorder a DataFrame so that the specified columns are moved to the front.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The original DataFrame.
+    columns_names : list of str
+        List of column names to move to the front. Must be a subset of df.columns.
+
+    Returns
+    -------
+    pd.DataFrame
+        A new DataFrame with the specified columns at the front.
+    """
+    remaining_cols = [col for col in df.columns if col not in column_names]
+    return df[column_names + remaining_cols]
+
+
+
+        

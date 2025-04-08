@@ -7,6 +7,7 @@ from feedback import build_streamlit_dashboard as market_feedback
 from timeseries import build_dashboard_vol as time_series
 from corr_mds_dashboard import build_streamlit_dashboard as corr_mds
 from factor_master_dashboard import build_streamlit_dashboard as factor_master
+# from util import add_sidebar_defaults
 
 factor_data = get_factor_data()
 
@@ -26,6 +27,8 @@ pg = st.navigation([st.Page(lambda: market_feedback(factor_data),
                             title='Factor Master',
                             url_path='factor_master'),
                     ])
+
+# add_sidebar_defaults()
 
 pg.run()
 
