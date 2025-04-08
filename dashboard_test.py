@@ -2,7 +2,7 @@
 # TEST 10 - SMALLER DATASET
 
 import streamlit as st
-from util import format_date
+from dates import format_date
 from data import build_factor_data
 from util import check_memory_usage
 from market_feedback import draw_market_feedback_scatter
