@@ -9,7 +9,6 @@ from config import HALFLIFES
 
 def build_dashboard_vol(factor_data):
     factor_list = factor_data['factor_name'].values
-    date_latest = factor_data.indexes['date'].max().date()
 
     with st.sidebar:
         factor_1 = st.selectbox('Factor 1', options=factor_list, index=1)

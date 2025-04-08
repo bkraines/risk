@@ -3,6 +3,7 @@
 from datetime import date, datetime, timedelta
 from typing import Optional, Iterable, Union
 import pandas as pd
+from pandas.tseries.offsets import BDay
 import streamlit as st
 
 from config import TRAILING_WINDOWS, MARKET_EVENTS
@@ -134,7 +135,7 @@ def select_date_range(
 
     if selected_range != "custom":
         start_date, end_date = all_date_options[selected_range]
-        st.write(f"{start_date} to {end_date}")
+        st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}") # TODO: 
     else:
         start_date = st.date_input("Start date", default_start, min_value=default_start, max_value=latest_date)
         end_date = st.date_input("End date", latest_date, min_value=default_start, max_value=latest_date)
@@ -143,9 +144,15 @@ def select_date_range(
         end_date = end_date[0] if isinstance(end_date, tuple) else end_date
 
         if start_date > end_date:
-            st.error("Start date must be before end date.")
+            st.error("Start date must be before end date.")     
+        st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")        
+        
+    # TODO: Ensure start_date and end_date are of comparable types then print output in one place:
+    # if start_date > end_date:
+    #     st.error("Start date must be before end date.")     
+    # else:
+    #     st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")        
 
-        st.write(f"{start_date} to {end_date}")
 
     # TODO: Break out Market Events into separate dropdown? Use an `optgroup` to separate the event types?
     # TODO: Allow custom trailing windows?
@@ -224,6 +231,10 @@ def select_date_range_bad(
 
 def format_date(date_str):
     return pd.to_datetime(date_str).strftime('%m/%d')
+
+
+def business_days_ago(n=1):
+    return (pd.Timestamp.today() - BDay(n)).date()
 
 
 # TODO: Break out Market Events into separate dropdown? Use an `optgroup` to separate the event types?

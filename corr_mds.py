@@ -113,7 +113,7 @@ def multidimensional_scaling(correlation_matrix: pd.DataFrame, init=None, random
                         columns=pd.Index(['dim1', 'dim2'], name='dimension'))
 
 
-def mds_ts_df(corr: xr.DataArray, start_date = None, transformation=None, factor='SPY', **kwargs) -> pd.DataFrame:
+def mds_ts_df(corr: xr.DataArray, start_date=None, transformation=None, factor='SPY', **kwargs) -> pd.DataFrame:
     # TODO: Factor out corr_type
 
     dates = corr.sel(date=slice(start_date, None)).date.values
@@ -259,7 +259,6 @@ def add_whiskers(fig, df, t0, t1):
 
 
 def get_marker_size(ds):
-
     # date = '2024-11-01'
     date_latest = ds.date.max().values
     # Choose as close to 21 days as possible

@@ -1,0 +1,23 @@
+import streamlit as st
+
+from data import get_factor_master, get_portfolios
+from util import move_columns_to_front
+
+
+
+def build_streamlit_dashboard():
+    first_columns = ['description', 'diffusion_type', 'multiplier']
+    factor_master = get_factor_master().pipe(move_columns_to_front, first_columns)
+    portfolios = get_portfolios().unstack().rename('weight').to_frame()[lambda x: x != 0].dropna()
+
+    
+    st.dataframe(portfolios, height=500)
+    st.dataframe(factor_master, height=3000)
+    
+
+if __name__ == "__main__":
+    # factor_data = get_factor_data()
+    build_streamlit_dashboard()
+    # del(factor_data)
+    
+    
