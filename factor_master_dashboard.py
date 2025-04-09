@@ -5,6 +5,15 @@ from interface import add_sidebar_defaults
 from util import move_columns_to_front
 
 
+def add_hyperlinks():
+    links = {'Daily Shot': 'https://thedailyshot.com/',
+             'US Yield Curve': 'https://www.ustreasuryyieldcurve.com/charts/treasuries-time-series',
+             'Nishant Kumar': 'https://x.com/nishantkumar07',
+             'Cliff Asnes': 'https://www.aqr.com/Insights/Perspectives'}
+    for name, url in links.items():
+        st.markdown(f"[{name}]({url})")
+
+
 def build_streamlit_dashboard():
     first_columns = ['description', 'diffusion_type', 'multiplier']
     factor_master = get_factor_master().pipe(move_columns_to_front, first_columns)
@@ -12,8 +21,9 @@ def build_streamlit_dashboard():
     
     st.dataframe(portfolios, height=500)
     st.dataframe(factor_master, height=3000)
-    
+    add_hyperlinks()
     add_sidebar_defaults()
+
 
 if __name__ == "__main__":
     # factor_data = get_factor_data()
