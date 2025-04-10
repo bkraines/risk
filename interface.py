@@ -2,12 +2,14 @@ import streamlit as st
 
 from data import get_factor_data
 from util import check_memory_usage, summarize_memory_usage
+from config import CACHE_TARGET
 
 
 def force_data_refresh():
     with st.sidebar:
         if st.button('Refresh Data'):
             get_factor_data(read_cache=False)
+        st.write(f'Cache target: {CACHE_TARGET}')
 
 
 def display_memory_usage():
