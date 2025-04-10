@@ -11,8 +11,8 @@ def build_dashboard_vol(factor_data):
     factor_list = factor_data['factor_name'].values
 
     with st.sidebar:
-        factor_1 = st.selectbox('Factor 1', options=factor_list, index=1)
-        factor_2 = st.selectbox('Factor 2', options=factor_list, index=2)
+        factor_1 = st.selectbox('Factor 1', options=factor_list, index=0)
+        factor_2 = st.selectbox('Factor 2', options=factor_list, index=1)
         # start_date = st.date_input('Start Date', value='2023-12-31')
         # end_date = st.date_input('End Date', value=date_latest)
         # start_date, end_date = get_date_picker(default_start=factor_data.indexes['date'].min().date())
