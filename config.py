@@ -8,7 +8,7 @@ CACHE_DIR = 'cache'
 CACHE_FILENAME = 'factor_data.zarr'
 ARRAYLAKE_REPO = 'finance-demos/demo-icechunk'
 
-CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'disk'
+CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'streamlit'
 STREAMLIT_CACHE = False
 
 # In case of `streamlit` caching, limit RAM usage by restricting `HALFLIFES`
