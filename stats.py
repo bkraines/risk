@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from numpy import sqrt, nan
 import pandas as pd
@@ -8,6 +8,8 @@ from util import xr_pct_change
 
 
 def fill_returns(df):
+    # Placeholder for more sophisticated logic
+    # TODO: Don't fill sufficiently stale data
     return df.ffill()
 
 
@@ -39,7 +41,9 @@ def calculate_returns(cret, periods=1, diffusion_type=None, multiplier=1e-4):
         #     raise ValueError(f'No diffusion_type provided for {cret.name}')
 
 
-def calculate_returns_set(df, periods, diffusion_map=None, multiplier_map=None):
+def calculate_returns_set(df, periods, diffusion_map: Optional[dict]=None, multiplier_map=None):
+    
+    
     return (pd.DataFrame({factor: calculate_returns(df[factor], 
                                                     periods, 
                                                     diffusion_map[factor], 
@@ -67,7 +71,9 @@ def accumulate_returns_new(ret, diffusion_type, level=None, multiplier=1e-4):
 
 def accumulate_returns_set(ret, diffusion_map, level_map=None, multiplier_map=None):
     if level_map is None:
-        level_map = {factor: None for factor in ret.columns}  
+        level_map = {factor: None for factor in ret.columns}
+    if multiplier_map is None:
+        multiplier_map = {}
     return (pd.DataFrame({factor: accumulate_returns_new(ret = ret[factor], 
                                                      diffusion_type = diffusion_map[factor], 
                                                      level = level_map.get(factor, 100), 

@@ -9,14 +9,16 @@ import streamlit as st
 from config import TRAILING_WINDOWS, MARKET_EVENTS
 
 
-def find_prior_month_end(dates: list[pd.Timestamp], current_date: pd.Timestamp) -> pd.Timestamp:
-    dates = sorted(pd.to_datetime(dates))
-    current_date = pd.to_datetime(current_date)
-    prior_month_dates = dates[dates < current_date.replace(day=1)]
-    if not prior_month_dates.empty:
-        return prior_month_dates.max()
-    else:
-        return dates.min()  # First date in the sorted list
+# def find_prior_month_end(dates: list[pd.Timestamp], current_date: Optional[pd.Timestamp]) -> pd.Timestamp:
+#     dates = sorted(pd.to_datetime(dates))
+#     if current_date is None:
+#         current_date = dates[-1]
+#     # current_date = pd.to_datetime(current_date)
+#     prior_month_dates = dates[dates < current_date.replace(day=1)]
+#     if not prior_month_dates.empty:
+#         return prior_month_dates.max()
+#     else:
+#         return dates.min()  # First date in the sorted list
 
 
 def get_mtd_range(today: Optional[date] = None) -> tuple[date, date]:
@@ -33,6 +35,7 @@ def get_mtd_range(today: Optional[date] = None) -> tuple[date, date]:
     tuple of date
         (start_date, end_date)
     """
+    # TODO: Return the last date of the prior month from a list
     today = today or date.today()
     start = date(today.year, today.month, 1)
     return start, today
@@ -63,7 +66,7 @@ def select_date_range(
     market_events: Optional[dict[str, tuple[datetime, datetime]]] = MARKET_EVENTS,
     # to_date_windows: Optional[dict[str, Callable[[datetime], tuple[datetime, datetime]]]] = TO_DATE_WINDOWS,
     default_option: Optional[str] = None,
-) -> tuple[datetime, datetime]:
+) -> tuple[date, date]:
     """
     Display a Streamlit UI to select a date range from trailing windows, named ranges, to-date periods, or a custom picker.
 
@@ -96,8 +99,10 @@ def select_date_range(
 
     date_list = sorted(date_list)
     if not date_list:
-        st.error("date_list must contain at least one date.")
-        return None, None
+        raise ValueError(f"List of dates must be nonempty")
+    # if not date_list:
+    #     st.error("date_list must contain at least one date.")
+    #     return None, None
 
     default_start = date_list[0]
     latest_date = date_list[-1]
@@ -140,8 +145,13 @@ def select_date_range(
         start_date = st.date_input("Start date", default_start, min_value=default_start, max_value=latest_date)
         end_date = st.date_input("End date", latest_date, min_value=default_start, max_value=latest_date)
 
-        start_date = start_date[0] if isinstance(start_date, tuple) else start_date
-        end_date = end_date[0] if isinstance(end_date, tuple) else end_date
+        if not isinstance(start_date, date):
+            raise ValueError(f"Expected a single date, but got {start_date} of type {type(start_date)}")
+        if not isinstance(end_date, date):
+            raise ValueError(f"Expected a single date, but got {end_date} of type {type(end_date)}")
+
+        # start_date = start_date[0] if isinstance(start_date, tuple) else start_date
+        # end_date = end_date[0] if isinstance(end_date, tuple) else end_date
 
         if start_date > end_date:
             st.error("Start date must be before end date.")     
@@ -160,73 +170,73 @@ def select_date_range(
 
 
 
-def select_date_range_bad(
-    date_list: Iterable[date],
-    trailing_windows: Optional[dict[str, int]] = None,
-    named_ranges: Optional[dict[str, tuple[date, date]]] = None
-) -> tuple[date, date]:
-    """
-    Display a date range selector using Streamlit widgets.
+# def select_date_range_bad(
+#     date_list: Iterable[date],
+#     trailing_windows: Optional[dict[str, int]] = None,
+#     named_ranges: Optional[dict[str, tuple[date, date]]] = None
+# ) -> tuple[date, date]:
+#     """
+#     Display a date range selector using Streamlit widgets.
 
-    Parameters
-    ----------
-    date_list : iterable of date
-        Available dates to select from.
-    trailing_windows : dict of str to int, optional
-        Mapping from label to number of days before the end date. Defaults to TRAILING_WINDOWS.
-    named_ranges : dict of str to tuple(date, date), optional
-        Mapping from label to explicit date ranges. Defaults to MARKET_EVENTS.
+#     Parameters
+#     ----------
+#     date_list : iterable of date
+#         Available dates to select from.
+#     trailing_windows : dict of str to int, optional
+#         Mapping from label to number of days before the end date. Defaults to TRAILING_WINDOWS.
+#     named_ranges : dict of str to tuple(date, date), optional
+#         Mapping from label to explicit date ranges. Defaults to MARKET_EVENTS.
 
-    Returns
-    -------
-    tuple of date
-        The selected start and end dates.
-    """
-    if trailing_windows is None:
-            traling_windows = TRAILING_WINDOWS
-    if named_ranges is None:
-            named_ranges = MARKET_EVENTS
+#     Returns
+#     -------
+#     tuple of date
+#         The selected start and end dates.
+#     """
+#     if trailing_windows is None:
+#             traling_windows = TRAILING_WINDOWS
+#     if named_ranges is None:
+#             named_ranges = MARKET_EVENTS
     
-    today = date_list[-1]
+#     today = date_list[-1]
 
-    def get_trailing_date(n: int) -> date:
-        index = max(0, len(date_list) - n - 1)
-        return date_list[index]
+#     def get_trailing_date(n: int) -> date:
+#         index = max(0, len(date_list) - n - 1)
+#         return date_list[index]
 
-    trailing_options = {
-        label: (get_trailing_date(n), today)
-        for label, n in trailing_windows.items()
-    }
+#     trailing_options = {
+#         label: (get_trailing_date(n), today)
+#         for label, n in trailing_windows.items()
+#     }
 
-    to_date_windows = {
-        # TODO: Replace with get_prior_month_end(date_list), get_prior_year_end(date_list)
-        "MTD": get_mtd_range(today),
-        "YTD": get_ytd_range(today),
-    }
+#     to_date_windows = {
+#         # TODO: Replace with get_prior_month_end(date_list), get_prior_year_end(date_list)
+#         "MTD": get_mtd_range(today),
+#         "YTD": get_ytd_range(today),
+#     }
 
-    static_options = {"max": (date_list[0], today), "custom": (None, None)}
+#     static_options = {"max": (date_list[0], today), "custom": (None, None)}
 
-    all_date_options = {
-        **static_options,
-        **to_date_windows,
-        **trailing_options,
-        **named_ranges,
-    }
+#     all_date_options = {
+#         **static_options,
+#         **to_date_windows,
+#         **trailing_options,
+#         **named_ranges,
+#     }
 
-    default_option = "max" if "max" in all_date_options else list(all_date_options.keys())[0]
-    label = st.selectbox("Date Range", options=list(all_date_options.keys()), index=list(all_date_options.keys()).index(default_option))
+#     default_option = "max" if "max" in all_date_options else list(all_date_options.keys())[0]
+#     label = st.selectbox("Date Range", options=list(all_date_options.keys()), index=list(all_date_options.keys()).index(default_option))
 
-    start_date, end_date = all_date_options[label]
+#     start_date, end_date = all_date_options[label]
 
-    if label == "custom":
-        start_date = st.date_input("Start date", value=today, max_value=today)
-        end_date = st.date_input("End date", value=today, min_value=start_date, max_value=today)
+#     if label == "custom":
+#         start_date = st.date_input("Start date", value=today, max_value=today)
+#         end_date = st.date_input("End date", value=today, min_value=start_date, max_value=today)
 
-        if start_date > end_date:
-            st.error("Start date must be before end date.")
+#         if start_date > end_date:
+#             st.error("Start date must be before end date.")
 
-    st.caption(f"{start_date} → {end_date}")
-    return start_date, end_date
+#     st.caption(f"{start_date} → {end_date}")
+#     return start_date, end_date
 
 
 def format_date(date_str):
