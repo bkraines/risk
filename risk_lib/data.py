@@ -5,7 +5,7 @@ import xarray as xr
 
 import yfinance as yf
 
-from dates import business_days_ago
+from risk_lib.util import business_days_ago
 from risk_lib.util import xr_pct_change, safe_reindex, cache
 from risk_lib.stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from risk_lib.config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME

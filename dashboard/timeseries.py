@@ -3,8 +3,8 @@ import streamlit as st
 from risk_lib.data import get_factor_data
 from risk_lib.chart import draw_volatility, draw_correlation, draw_cumulative_return
 from risk_lib.config import HALFLIFES
-from dates import select_date_range
-from interface import add_sidebar_defaults
+from dashboard.interface import select_date_range
+from dashboard.interface import add_sidebar_defaults
 
 
 def build_dashboard_vol(factor_data):

@@ -2,7 +2,7 @@ import streamlit as st
 
 from risk_lib.data import get_factor_data
 from risk_lib.corr_mds import run_mds
-from interface import add_sidebar_defaults
+from dashboard.interface import add_sidebar_defaults
 
 def build_streamlit_dashboard(factor_data):
     args = {'random_state': 42, 

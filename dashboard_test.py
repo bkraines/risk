@@ -2,10 +2,10 @@
 # TEST 10 - SMALLER DATASET
 
 import streamlit as st
-from dates import format_date
+from risk_lib.util import format_date
 from risk_lib.data import build_factor_data
 from risk_lib.util import check_memory_usage
-from market_feedback import draw_market_feedback_scatter
+from risk_lib.market_feedback import draw_market_feedback_scatter
 
 halflifes = [126] # [21, 63, 126, 252]
 

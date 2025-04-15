@@ -1,7 +1,7 @@
 import streamlit as st
 
 from risk_lib.data import get_factor_master, get_portfolios
-from interface import add_sidebar_defaults
+from dashboard.interface import add_sidebar_defaults
 from risk_lib.util import move_columns_to_front
 
 
