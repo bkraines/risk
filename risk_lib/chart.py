@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Union
 from plotly.graph_objs import Figure
 
 import os
@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-from config import IMAGE_DIR
+from risk_lib.config import IMAGE_DIR
 
 # TODO: Pull ploty template into a constant:
 PLOTLY_TEMPLATE = 'plotly_white'
@@ -185,7 +185,7 @@ def draw_cumulative_return(da, factor_name, factor_name_1):
     return fig
 
 
-def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: List[int]) -> Figure:
+def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: list[int]) -> Figure:
     """
     Draws a line plot of the volatility for a given asset and volatility type.
 
@@ -195,7 +195,7 @@ def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: List[int]) ->
         A DataArray containing the volatility data with dimensions including 'date', 'asset', and 'vol_type'.
     asset : str
         The name of the asset for which the volatility plot is to be drawn.
-    vol_type : List[int]
+    vol_type : list[int]
         A list of integers representing the types of volatility to be plotted.
 
     Returns
@@ -216,7 +216,7 @@ def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: List[int]) ->
     return fig
 
 
-def draw_correlation(corr: xr.DataArray, factor_name: str, factor_name_1: str, corr_type: List[int]) -> Figure:
+def draw_correlation(corr: xr.DataArray, factor_name: str, factor_name_1: str, corr_type: list[int]) -> Figure:
     """
     Draws a correlation plot between two assets over time.
 
@@ -228,7 +228,7 @@ def draw_correlation(corr: xr.DataArray, factor_name: str, factor_name_1: str, c
         The name of the first asset.
     asset_1 : str
         The name of the second asset.
-    corr_type : List[int]
+    corr_type : list[int]
         A list of correlation types to be plotted.
 
     Returns

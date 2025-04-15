@@ -8,7 +8,7 @@ import pandas as pd
 import xarray as xr
 import streamlit as st
 
-from config import CACHE_DIR, ARRAYLAKE_REPO
+from risk_lib.config import CACHE_DIR, ARRAYLAKE_REPO
 
 
 # Patch `pydantic`, used by `streamlit` server, which doesn't recognize `DBIDBytes` type from `arraylake`.

@@ -4,7 +4,7 @@ from numpy import sqrt, nan
 import pandas as pd
 import xarray as xr
 
-from util import xr_pct_change
+from risk_lib.util import xr_pct_change
 
 
 def fill_returns(df):
