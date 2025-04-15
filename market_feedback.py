@@ -4,8 +4,8 @@ from numpy import sqrt
 import pandas as pd
 import xarray as xr
 
-from stats import total_return
-from chart import px_scatter, px_write
+from risk_lib.stats import total_return
+from risk_lib.chart import px_scatter, px_write
 
 
 def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title):
@@ -63,7 +63,7 @@ def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type
                         #   legend_xanchor="right", ) )
                         #   legend_x=1)
                     
-    # from chart import px_format
+    # from risk_lib.chart import px_format
     # fig = px_format(fig, 
     #                 x_title='Correlation with 10-year bond',
     #                 y_title='Return on Fed Announcement (std)')

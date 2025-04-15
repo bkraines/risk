@@ -1,10 +1,10 @@
 import streamlit as st
 
-from data import get_factor_data
+from risk_lib.data import get_factor_data
+from risk_lib.chart import draw_volatility, draw_correlation, draw_cumulative_return
+from risk_lib.config import HALFLIFES
 from dates import select_date_range
-from chart import draw_volatility, draw_correlation, draw_cumulative_return
 from interface import add_sidebar_defaults
-from config import HALFLIFES
 
 
 def build_dashboard_vol(factor_data):
@@ -29,6 +29,7 @@ def build_dashboard_vol(factor_data):
         st.write(fig)
 
     add_sidebar_defaults()
+
 
 if __name__ == "__main__":
     factor_data = get_factor_data()

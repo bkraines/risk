@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.tseries.offsets import BDay
 import streamlit as st
 
-from config import TRAILING_WINDOWS, MARKET_EVENTS
+from risk_lib.config import TRAILING_WINDOWS, MARKET_EVENTS
 
 
 # def find_prior_month_end(dates: list[pd.Timestamp], current_date: Optional[pd.Timestamp]) -> pd.Timestamp:

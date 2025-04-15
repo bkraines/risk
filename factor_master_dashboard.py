@@ -1,8 +1,8 @@
 import streamlit as st
 
-from data import get_factor_master, get_portfolios
+from risk_lib.data import get_factor_master, get_portfolios
 from interface import add_sidebar_defaults
-from util import move_columns_to_front
+from risk_lib.util import move_columns_to_front
 
 
 def add_hyperlinks():

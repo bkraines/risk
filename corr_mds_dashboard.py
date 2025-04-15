@@ -1,7 +1,7 @@
 import streamlit as st
 
-from data import get_factor_data
-from corr_mds import run_mds
+from risk_lib.data import get_factor_data
+from risk_lib.corr_mds import run_mds
 from interface import add_sidebar_defaults
 
 def build_streamlit_dashboard(factor_data):
