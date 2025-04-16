@@ -6,7 +6,7 @@ from risk_lib.market_feedback import draw_market_feedback_scatter
 from risk_lib.config import HALFLIFES
 from dashboard.interface import add_sidebar_defaults, select_date_range
 
-def build_streamlit_dashboard(factor_data):
+def build_dashboard(factor_data):
     # TODO: Add peak memory usage (before deleting factor_data)
     # TODO: Aḍd initial memory usage (before loading factor_data)
     factor_list = factor_data['factor_name'].values
@@ -30,6 +30,6 @@ def build_streamlit_dashboard(factor_data):
 
 if __name__ == "__main__":
     factor_data = get_factor_data()
-    build_streamlit_dashboard(factor_data)
+    build_dashboard(factor_data)
     # add_sidebar_defaults()
     del(factor_data)

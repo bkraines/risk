@@ -14,7 +14,7 @@ def add_hyperlinks():
         st.markdown(f"[{name}]({url})")
 
 
-def build_streamlit_dashboard():
+def build_dashboard():
     first_columns = ['description', 'diffusion_type', 'multiplier']
     factor_master = get_factor_master().pipe(move_columns_to_front, first_columns)
     portfolios = get_portfolios().unstack().rename('weight').to_frame()[lambda x: x != 0].dropna()
@@ -27,7 +27,7 @@ def build_streamlit_dashboard():
 
 if __name__ == "__main__":
     # factor_data = get_factor_data()
-    build_streamlit_dashboard()
+    build_dashboard()
     # add_sidebar_defaults()
     # del(factor_data)
     
