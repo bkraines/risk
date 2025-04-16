@@ -7,7 +7,7 @@ from dashboard.interface import select_date_range
 from dashboard.interface import add_sidebar_defaults
 
 
-def build_dashboard_vol(factor_data):
+def build_dashboard(factor_data):
     factor_list = factor_data['factor_name'].values
 
     with st.sidebar:
@@ -33,6 +33,6 @@ def build_dashboard_vol(factor_data):
 
 if __name__ == "__main__":
     factor_data = get_factor_data()
-    build_dashboard_vol(factor_data)
+    build_dashboard(factor_data)
     # add_sidebar_defaults()
     del(factor_data)

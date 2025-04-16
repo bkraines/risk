@@ -4,7 +4,7 @@ from risk_lib.data import get_factor_data
 from risk_lib.corr_mds import run_mds
 from dashboard.interface import add_sidebar_defaults
 
-def build_streamlit_dashboard(factor_data):
+def build_dashboard(factor_data):
     args = {'random_state': 42, 
             'n_init': 100}
     
@@ -47,6 +47,6 @@ def build_streamlit_dashboard(factor_data):
 
 if __name__ == "__main__":
     factor_data = get_factor_data()
-    build_streamlit_dashboard(factor_data)
+    build_dashboard(factor_data)
     # add_sidebar_defaults()
     del(factor_data)
