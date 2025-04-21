@@ -27,6 +27,7 @@ def safe_reindex(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     assert df1.index.isin(df2.index).all()
     return df1.reindex(df2.index)
 
+
 def xr_pct_change(da: xr.DataArray, dim: str, periods: int = 1) -> xr.DataArray:
     """
     Calculate the percent change between values of an xarray DataArray along a specified dimension,
@@ -430,12 +431,16 @@ def get_ytd_range(today: Optional[date] = None) -> tuple[date, date]:
 
 
 def format_date(date_str):
-    return pd.to_datetime(date_str).strftime('%m/%d')
+    return pd.to_datetime(date_str).strftime(r'%m/%d')
 
 
-def business_days_ago(n=1):
+def business_days_ago(n=1, current_date=None):
+    if current_date is None:
+        current_date = pd.Timestamp.today()
     return (pd.Timestamp.today() - BDay(n)).date()
 
 
-
-        
+# def current_business_day(current_date=None):
+#     if current_date is None:
+#         current_date = pd.Timestamp.today()
+#     return (pd.Timestamp.today().date() + BDay(1) - BDay(1)).date()

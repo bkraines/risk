@@ -7,6 +7,8 @@ IMAGE_DIR = 'images'
 CACHE_DIR = 'cache'
 CACHE_FILENAME = 'factor_data.zarr'
 ARRAYLAKE_REPO = 'finance-demos/demo-icechunk'
+FACTOR_DIR = 'risk_lib'
+FACTOR_FILENAME = 'factor_master.xlsx'
 
 CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'disk'
 STREAMLIT_CACHE = False

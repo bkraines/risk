@@ -11,8 +11,7 @@ def build_dashboard(factor_data):
     with st.sidebar:
         earliest_date = factor_data.indexes['date'].min().date()
         latest_date = factor_data.indexes['date'].max().date()
-        end_date = st.date_input("End date", latest_date, 
-                                 min_value=earliest_date, max_value=latest_date)
+        end_date = st.date_input("End date", latest_date, earliest_date, latest_date)
         animate = st.checkbox('Animate', value=False)
         composites = st.checkbox('Composites', value=True)
         trump = st.checkbox('Trump', value=True)

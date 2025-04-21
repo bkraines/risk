@@ -1,14 +1,14 @@
 from typing import List
+import os
 
 import pandas as pd
 import xarray as xr
 
 import yfinance as yf
 
-from risk_lib.util import business_days_ago
-from risk_lib.util import xr_pct_change, safe_reindex, cache
+from risk_lib.util import business_days_ago, xr_pct_change, safe_reindex, cache
 from risk_lib.stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
-from risk_lib.config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME
+from risk_lib.config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR
 
 def get_yahoo_data(ticker, field_name):
     # TODO: Check cache first
@@ -51,14 +51,15 @@ def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
     return ds
 
 
-def get_factor_master(filename: str = 'factor_master.xlsx', sheet_name: str = 'read', index_col: str = 'factor_name') -> pd.DataFrame:
-    df = pd.read_excel(filename, sheet_name=sheet_name, index_col=index_col)
+def get_factor_master(file_name: str = FACTOR_FILENAME, file_dir = FACTOR_DIR, sheet_name: str = 'read', index_col: str = 'factor_name') -> pd.DataFrame:
+    file_path = os.path.join(file_dir, file_name)
+    df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index, ordered=True)
     return df
 
-
-def get_portfolios(filename: str = 'factor_master.xlsx', sheet_name: str = 'read_composites', index_col: str = 'portfolio_name') -> pd.DataFrame:
-    df = pd.read_excel(filename, sheet_name=sheet_name, index_col=index_col)
+def get_portfolios(file_name: str = FACTOR_FILENAME, file_dir = FACTOR_DIR, sheet_name: str = 'read_composites', index_col: str = 'portfolio_name') -> pd.DataFrame:
+    file_path = os.path.join(file_dir, file_name)
+    df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index.unique(), ordered=True)
     return (df.reset_index()
             .pivot(index='factor_name', 
@@ -69,6 +70,7 @@ def get_portfolios(filename: str = 'factor_master.xlsx', sheet_name: str = 'read
 
 
 def is_data_current(ds: xr.Dataset) -> bool:
+    # TODO: If latest_date is a weekend, this will always return False
     date_latest = ds.indexes['date'].max().date()
     date_prior  = business_days_ago(1)
     return date_latest >= date_prior
@@ -78,7 +80,7 @@ def is_data_current(ds: xr.Dataset) -> bool:
 def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
-    factor_master = get_factor_master('factor_master.xlsx', factor_set)
+    factor_master = get_factor_master(file_name='factor_master.xlsx', sheet_name=factor_set)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
     multiplier_map = factor_master['multiplier']
