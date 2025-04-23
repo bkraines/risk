@@ -1,0 +1,106 @@
+import streamlit as st
+
+from numpy import sqrt
+import pandas as pd
+import xarray as xr
+
+from risk_lib.data import get_factor_data, get_factor_master
+from risk_lib.util import format_date
+# from risk_lib.market_feedback import draw_market_feedback_scatter
+from risk_lib.config import HALFLIFES
+from dashboard.interface import add_sidebar_defaults, select_date_range
+
+
+def build_monitor_table(factor_data: xr.Dataset, vol_type) -> pd.DataFrame:
+    """Builds a monitor table for the given date."""
+    
+    # factor_data = factor_data.sel(date=slice(None, date))
+    # vol_type = 63
+    date_latest   = factor_data.date[-1].values
+    date_incoming = factor_data.date[-2].values
+    
+    ret_latest = factor_data.ret.sel(date=date_latest).to_series().div(100).rename('ret')
+    vol_incoming = factor_data.vol.sel(vol_type=vol_type, date=date_incoming).to_series().rename('vol')
+
+    zscore = (ret_latest / (vol_incoming.mul(sqrt(1/252)))).rename('zscore')
+    zscore.to_frame().style
+
+    # factor_master = factor_data.factor_name.attrs
+    factor_master = pd.DataFrame(factor_data.factor_name.attrs).T
+    factor_master.index = pd.CategoricalIndex(factor_master.index, categories=factor_master.index, ordered=True, name='factor_name')
+    
+    df = (pd.concat([ret_latest, zscore, vol_incoming], axis=1)
+        .join(factor_master[['asset_class', 'region']])
+        .reset_index()
+        .set_index(['asset_class', 'region', 'factor_name'])
+        )
+
+    latest_str = pd.Timestamp(date_latest).strftime('%Y-%m-%d')
+    incoming_str = pd.Timestamp(date_incoming).strftime('%Y-%m-%d')
+    df.name = f'Returns as of {latest_str}, vol as of {incoming_str}'
+    
+    return(df)
+
+    
+
+def build_dashboard(factor_data):
+
+    model_options = HALFLIFES
+    model_default = model_options.index(63) if 63 in model_options else 0
+    
+    with st.sidebar:
+        # corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)
+        # return_start, return_end = select_date_range(factor_data.indexes['date'], default_option='MTD')
+        vol_type     = st.selectbox('Volatility Halflife', options=model_options, index=model_default)
+        # corr_type    = st.selectbox('Correlation Halflife', options=model_options, index=model_default)
+    
+    df = build_monitor_table(factor_data, vol_type)
+    st.write(df.name)
+    # TODO: Use Ag-grid instead of streamlit for better customization
+    st.dataframe(
+        df,
+        height=1000,
+        column_config={
+            "vol": st.column_config.NumberColumn(
+                "Volatility (% ann)",
+                format="%.1f",
+            ),
+            "zscore": st.column_config.NumberColumn(
+                "Return (std)",
+                format="%.1f"
+            ),
+            "ret": st.column_config.NumberColumn(
+                "Return (%)",
+                format="%.2f"
+            ),
+            })
+
+
+
+
+    # # TODO: Add peak memory usage (before deleting factor_data)
+    # # TODO: Aḍd initial memory usage (before loading factor_data)
+    # factor_list = factor_data['factor_name'].values
+
+    # model_options = HALFLIFES
+    # model_default = model_options.index(126) if 126 in model_options else 0
+
+    # with st.sidebar:
+    #     corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)
+    #     return_start, return_end = select_date_range(factor_data.indexes['date'], default_option='MTD')
+    #     vol_type     = st.selectbox('Volatility Halflife', options=model_options, index=model_default)
+    #     corr_type    = st.selectbox('Correlation Halflife', options=model_options, index=model_default)
+
+    # return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
+    # fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
+
+    # st.write(fig)
+    
+    add_sidebar_defaults()
+
+
+if __name__ == "__main__":
+    factor_data = get_factor_data()
+    build_dashboard(factor_data)
+    # add_sidebar_defaults()
+    del(factor_data)

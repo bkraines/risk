@@ -10,6 +10,7 @@ from dashboard.dashboard_feedback   import build_dashboard as feedback
 from dashboard.dashboard_timeseries import build_dashboard as timeseries
 from dashboard.dashboard_mds        import build_dashboard as mds
 from dashboard.dashboard_master     import build_dashboard as master
+from dashboard.dashboard_monitor    import build_dashboard as monitor
 # from risk_lib.util import add_sidebar_defaults
 
 factor_data = get_factor_data()
@@ -29,6 +30,10 @@ pg = st.navigation([st.Page(lambda: feedback(factor_data),
                     st.Page(lambda: master(),
                             title='Factor Master',
                             url_path='factor_master'),
+                    
+                    st.Page(lambda: monitor(factor_data),
+                            title='Performance',
+                            url_path='monitor'),
                     ])
 
 # add_sidebar_defaults()
