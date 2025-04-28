@@ -12,7 +12,7 @@ def build_dashboard(factor_data):
     factor_list = factor_data['factor_name'].values
 
     model_options = HALFLIFES
-    model_default = model_options.index(126) if 126 in model_options else 0
+    model_default = model_options.index(63) if 63 in model_options else 0
 
     with st.sidebar:
         corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)

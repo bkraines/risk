@@ -34,14 +34,15 @@ TRAILING_WINDOWS = {
 
 # Named historical event ranges
 MARKET_EVENTS: dict[str, tuple[datetime, datetime]] = {
-    "GFC (2008)":           (datetime(2007, 10, 1), datetime(2009, 3, 9)),
-    "Eurozone Crisis":      (datetime(2011, 7, 1), datetime(2012, 9, 1)),
-    "Taper Tantrum (2013)": (datetime(2013, 5, 1), datetime(2013, 9, 1)),
-    "China Deval (2015)":   (datetime(2015, 6, 1), datetime(2016, 2, 29)),
-    "Trade Wars (2018)":    (datetime(2018, 1, 1), datetime(2019, 1, 1)),
-    "COVID Crash":          (datetime(2020, 2, 15), datetime(2020, 3, 23)),
-    "Inflation Shock":      (datetime(2022, 1, 1), datetime(2023, 6, 30)),
-    "SVB Crisis":           (datetime(2023, 3, 1), datetime(2023, 4, 1)),
+    "Trade Wars (2025)":    (datetime(2025,  3, 31), datetime(2025, 4, 21)),
+    "GFC (2008)":           (datetime(2007, 10,  1), datetime(2009, 3,  9)),
+    "Eurozone Crisis":      (datetime(2011,  7,  1), datetime(2012, 9,  1)),
+    "Taper Tantrum (2013)": (datetime(2013,  5,  1), datetime(2013, 9,  1)),
+    "China Deval (2015)":   (datetime(2015,  6,  1), datetime(2016, 2, 29)),
+    "Trade Wars (2018)":    (datetime(2018,  1,  1), datetime(2019, 1,  1)),
+    "COVID Crash":          (datetime(2020,  2, 15), datetime(2020, 3, 23)),
+    "Inflation Shock":      (datetime(2022,  1,  1), datetime(2023, 6, 30)),
+    "SVB Crisis":           (datetime(2023,  3,  1), datetime(2023, 4,  1)),
 
     "Brexit Referendum":       (datetime(2016, 6, 1), datetime(2016, 7, 15)),
     "Ukraine Invasion":        (datetime(2022, 2, 24), datetime(2022, 4, 30)),

@@ -6,6 +6,7 @@ from risk_lib.config import HALFLIFES
 from dashboard.interface import select_date_range
 from dashboard.interface import add_sidebar_defaults
 
+# TODO: Add vol ratio, add beta
 
 def build_dashboard(factor_data):
     factor_list = factor_data['factor_name'].values

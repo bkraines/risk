@@ -1,4 +1,3 @@
-
 from configure_sys_path import add_project_root_to_sys_path
 add_project_root_to_sys_path()
 

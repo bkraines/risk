@@ -21,15 +21,16 @@ def build_monitor_table(factor_data: xr.Dataset, vol_type) -> pd.DataFrame:
     
     ret_latest = factor_data.ret.sel(date=date_latest).to_series().div(100).rename('ret')
     vol_incoming = factor_data.vol.sel(vol_type=vol_type, date=date_incoming).to_series().rename('vol')
-
+    
     zscore = (ret_latest / (vol_incoming.mul(sqrt(1/252)))).rename('zscore')
-    zscore.to_frame().style
+    # zscore.to_frame().style
 
     # factor_master = factor_data.factor_name.attrs
     factor_master = pd.DataFrame(factor_data.factor_name.attrs).T
     factor_master.index = pd.CategoricalIndex(factor_master.index, categories=factor_master.index, ordered=True, name='factor_name')
     
-    df = (pd.concat([ret_latest, zscore, vol_incoming], axis=1)
+    from numpy import abs
+    df = (pd.concat([ret_latest, zscore, vol_incoming, abs(zscore).rename('zscore_abs')], axis=1)
         .join(factor_master[['asset_class', 'region']])
         .reset_index()
         .set_index(['asset_class', 'region', 'factor_name'])
@@ -54,24 +55,37 @@ def build_dashboard(factor_data):
         vol_type     = st.selectbox('Volatility Halflife', options=model_options, index=model_default)
         # corr_type    = st.selectbox('Correlation Halflife', options=model_options, index=model_default)
     
+    def style_zscore_abs(col):
+        """Applies gray text color style to the zscore_abs column."""
+        return ['color: lightgray'] * len(col) # You can also use 'lightgray' or a hex code like '#808080'
+    
     df = build_monitor_table(factor_data, vol_type)
     st.write(df.name)
     # TODO: Use Ag-grid instead of streamlit for better customization
+    
+    styler = df.style.apply(style_zscore_abs, subset=['zscore_abs'])
+
     st.dataframe(
-        df,
-        height=1000,
+        # df,
+        styler,
+        height=700,
+        width=650,
         column_config={
             "vol": st.column_config.NumberColumn(
-                "Volatility (% ann)",
-                format="%.1f",
+            "Volatility (% ann)",
+            format="%.1f",
             ),
             "zscore": st.column_config.NumberColumn(
-                "Return (std)",
-                format="%.1f"
+            "Return (std)",
+            format="%.1f"
             ),
             "ret": st.column_config.NumberColumn(
-                "Return (%)",
-                format="%.2f"
+            "Return (%)",
+            format="%.2f"
+            ),
+            "zscore_abs": st.column_config.NumberColumn(
+            "Return (|std|)",
+            format="%.1f"
             ),
             })
 
