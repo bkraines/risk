@@ -143,3 +143,15 @@ def get_correlation_set(ret: xr.DataArray, halflifes: List[int]) -> xr.DataArray
                      dim=pd.Index(halflifes, name='corr_type'))
 
 
+def get_beta_pair(vol: xr.DataArray, corr: xr.DataArray, factor_name: str, factor_name_1: str) -> xr.DataArray:
+    # TODO: Currently assumes vol types and corr types match. Instead, pull cov_type dictionary
+    # TODO: Just works on factor pair. Should work on full factor set
+    vol_0 = vol.sel(factor_name=factor_name).rename({'vol_type': 'cov_type'})
+    vol_1 = vol.sel(factor_name=factor_name_1).rename({'vol_type': 'cov_type'})
+    corr  = corr.sel(factor_name=factor_name, factor_name_1=factor_name_1).rename({'corr_type': 'cov_type'})
+    beta  = vol_1 / vol_0 * corr
+    return beta.rename('beta')
+
+
+def get_beta_set(vol: xr.DataArray, corr: xr.DataArray, cov_types: dict) -> None: # xr.DataArray:
+    pass  # TODO: Implement this function

@@ -19,6 +19,10 @@ if STREAMLIT_CACHE or (CACHE_TARGET == 'streamlit'):
 else:
     HALFLIFES = [21, 63, 126, 252, 512]
 
+COV_TYPES = {str(h): {'vol_type': h,
+                      'corr_type': h}
+             for h in HALFLIFES}
+
 # Trailing windows
 TRAILING_WINDOWS = {
     "1d": 1,

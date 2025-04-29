@@ -12,6 +12,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 from risk_lib.config import IMAGE_DIR
+from risk_lib.stats import get_beta_pair
 
 # TODO: Pull ploty template into a constant:
 PLOTLY_TEMPLATE = 'plotly_white'
@@ -272,3 +273,25 @@ def format_corr_matrix(corr: pd.DataFrame): # -> pd.io.formats.style.Styler:
     styled_corr = corr.style.background_gradient(cmap='coolwarm', vmin=-1, vmax=1).format(precision=2)
     
     return styled_corr
+
+
+def draw_beta(factor_data: xr.Dataset, factor_name: str, factor_name_1: str) -> Figure:    
+    # cov_type = zip(vol_type, corr_type)
+    beta = get_beta_pair(factor_data.vol, factor_data.corr, factor_name, factor_name_1)
+    ds = beta.dropna(dim='date')
+    fig = (px_line(ds, x='date', y='beta', color='cov_type', 
+                   title=f'Beta of {factor_name_1} to {factor_name}')
+           .update_yaxes(type="log"))
+    
+    return fig
+
+
+def draw_volatility_ratio(vol: xr.DataArray, factor_name: str, factor_name_1: str, vol_type: list[int]) -> Figure:
+    
+    vol_0 = vol.sel(factor_name=factor_name, vol_type=vol_type)
+    vol_1 = vol.sel(factor_name=factor_name_1, vol_type=vol_type)
+    vol_ratio = vol_1 / vol_0
+    
+    ds = vol_ratio.dropna(dim='date')
+    fig = px_line(ds, x='date', y='vol', color='vol_type', title=f'Volatility Ratio of {factor_name_1} to {factor_name}')
+    return fig
