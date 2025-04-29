@@ -51,7 +51,7 @@ def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
     return ds
 
 
-def get_factor_master(file_name: str = FACTOR_FILENAME, file_dir = FACTOR_DIR, sheet_name: str = 'read', index_col: str = 'factor_name') -> pd.DataFrame:
+def get_factor_master(file_name: str = FACTOR_FILENAME, file_dir: str = FACTOR_DIR, sheet_name: str = 'read', index_col: str = 'factor_name') -> pd.DataFrame:
     file_path = os.path.join(file_dir, file_name)
     df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index, ordered=True)

@@ -1,4 +1,5 @@
-from typing import List, Optional
+from typing import List, Optional, TypeVar
+from collections.abc import Mapping
 
 from numpy import sqrt, nan
 import pandas as pd
@@ -27,7 +28,9 @@ def align_dates(df, business_day_factors):
             .loc[dates_business])
 
 
-def calculate_returns(cret, periods=1, diffusion_type=None, multiplier=1e-4):
+PandasObjectT = TypeVar("PandasObjectT", pd.Series, pd.DataFrame)
+
+def calculate_returns(cret: PandasObjectT, periods=1, diffusion_type=None, multiplier=1e-4) -> PandasObjectT:
     match diffusion_type:
         case 'lognormal':
             return cret.pct_change(periods).div(multiplier)
@@ -36,19 +39,17 @@ def calculate_returns(cret, periods=1, diffusion_type=None, multiplier=1e-4):
         # case 'normal10':
         #     return cret.diff().div(10)
         case _:
-            raise ValueError(f'Unsupported diffusion_type of {diffusion_type} for {cret.name}')
+            raise ValueError(f'Unsupported diffusion_type of {diffusion_type} for {getattr(cret, "name", "unnamed factor")}')
         # case nan:
         #     raise ValueError(f'No diffusion_type provided for {cret.name}')
 
 
-def calculate_returns_set(df, periods, diffusion_map: Optional[dict]=None, multiplier_map=None):
-    
-    
-    return (pd.DataFrame({factor: calculate_returns(df[factor], 
+def calculate_returns_set(cret: pd.DataFrame, periods: int, diffusion_map: Mapping[str, str], multiplier_map: Mapping[str, float]):
+    return (pd.DataFrame({factor: calculate_returns(cret[factor], 
                                                     periods, 
                                                     diffusion_map[factor], 
                                                     multiplier_map[factor]) 
-                          for factor in df.columns
+                          for factor in cret.columns
                           })
             .rename_axis(index='date', columns='factor_name'))
     
@@ -118,6 +119,14 @@ def accumulate_returns(da_ret: xr.DataArray, dim: str = 'date') -> xr.DataArray:
             .where(~da_ret.isnull(), nan)
             .ffill(dim=dim)
     )
+
+
+def get_volatility_set_new(cret: xr.DataArray, halflifes: List[int], dim: str='date') -> xr.DataArray:
+    periods = 1
+    ret = calculate_returns(cret.to_pandas(), periods=periods).to_xarray()
+    return xr.concat([(ret/100).rolling_exp({dim: h}, window_type='halflife').std() * sqrt(252 / periods)
+                      for h in halflifes],
+                     dim=pd.Index(halflifes, name='vol_type'))
 
 
 def get_volatility_set(ret: xr.DataArray, halflifes: List[int], dim: str='date') -> xr.DataArray:
