@@ -150,7 +150,8 @@ def plot_dual_axis(series1: pd.Series, series2: pd.Series,
 
     fig.update_layout(
         title=title,
-        xaxis_title='Date',
+        # xaxis_title='Date',
+        xaxis_title=None,
         legend=dict(x=0.01, y=0.99),
         hovermode='x unified',
         template='plotly_white',
@@ -177,13 +178,26 @@ def plot_dual_axis(series1: pd.Series, series2: pd.Series,
 
     return fig
 
-def draw_cumulative_return(da, factor_name, factor_name_1):
+def draw_cumulative_return(da: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
     # TODO: Scale secondary factor to same units as primary factor given a start date
     #       Alternatively, start both at 100
     df1 = da.sel(factor_name=factor_name).to_series()
     df2 = da.sel(factor_name=factor_name_1).to_series()
     fig = plot_dual_axis(df1, df2, label1=factor_name, label2=factor_name_1, title=f'{factor_name} vs {factor_name_1}')
     return fig
+
+
+def draw_returns(ret: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
+    df = ret.to_pandas()[[factor_name, factor_name_1]].div(100)
+    return (px.bar(df, barmode='group', 
+                   title=f'Daily Returns of {factor_name} and {factor_name_1} (%)',
+                   template='plotly_white')
+            .update_traces(marker_line_width=0,
+                           hovertemplate=None)
+            .update_layout(xaxis_title=None,
+                           yaxis_title=None,
+                           hovermode='x unified')
+    )
 
 
 def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: list[int]) -> Figure:

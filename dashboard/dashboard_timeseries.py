@@ -1,12 +1,10 @@
 import streamlit as st
 
 from risk_lib.data import get_factor_data
-from risk_lib.chart import draw_volatility, draw_correlation, draw_cumulative_return, draw_volatility_ratio, draw_beta
+from risk_lib.chart import draw_volatility, draw_correlation, draw_cumulative_return, draw_volatility_ratio, draw_beta, draw_returns
 from risk_lib.config import HALFLIFES
 from dashboard.interface import select_date_range
 from dashboard.interface import add_sidebar_defaults
-
-# TODO: Add vol ratio, add beta
 
 def build_dashboard(factor_data):
     factor_list = factor_data['factor_name'].values
@@ -21,6 +19,7 @@ def build_dashboard(factor_data):
 
     ds = factor_data.sel(date=slice(start_date, end_date))
     figs = {'cret':  draw_cumulative_return(ds.cret, factor_name=factor_1, factor_name_1=factor_2),
+            'ret':   draw_returns(ds.ret, factor_name=factor_1, factor_name_1=factor_2),
             'corr':  draw_correlation(ds.corr, factor_name=factor_1, factor_name_1=factor_2, corr_type=HALFLIFES),
             'beta':  draw_beta(ds, factor_name=factor_1, factor_name_1=factor_2),
             'vol_1': draw_volatility(ds.vol, factor_name=factor_1, vol_type=HALFLIFES),
