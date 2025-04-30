@@ -164,3 +164,10 @@ def get_beta_pair(vol: xr.DataArray, corr: xr.DataArray, factor_name: str, facto
 
 def get_beta_set(vol: xr.DataArray, corr: xr.DataArray, cov_types: dict) -> None: # xr.DataArray:
     pass  # TODO: Implement this function
+
+
+def get_zscore(ret: xr.DataArray, vol: xr.DataArray, shift=1) -> xr.DataArray:
+    _ret = ret / 100
+    _vol = vol / sqrt(252)
+    zscore = _ret / _vol.shift({'date': shift})
+    return zscore.rename('zscore')

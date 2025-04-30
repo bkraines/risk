@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 from plotly.graph_objs import Figure
 
 import os
@@ -12,8 +12,9 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 from risk_lib.config import IMAGE_DIR
-from risk_lib.stats import get_beta_pair
+from risk_lib.stats import get_beta_pair, get_zscore
 
+# TODO: Share chart dimensions and template by extracting `fig_format_default` dict from `px_line`
 # TODO: Pull ploty template into a constant:
 PLOTLY_TEMPLATE = 'plotly_white'
 
@@ -112,6 +113,20 @@ def px_scatter(df, x, y, color_map_override=None, **kwargs):
     return fig
 
 
+def px_bar(da: xr.DataArray, title: Optional[str] = None) -> Figure:
+    df = da.to_pandas()
+    fig = (px.bar(df, barmode='group', 
+                  title=title,
+                  template='plotly_white')
+            .update_traces(marker_line_width=0,
+                           hovertemplate=None)
+            .update_layout(xaxis_title=None,
+                           yaxis_title=None,
+                           legend_title_text=None,
+                        #    legend=dict(x=0.01, y=0.99),
+                           hovermode='x unified')
+            )
+    return px_format(fig)
 
 
 def plot_dual_axis(series1: pd.Series, series2: pd.Series, 
@@ -178,6 +193,7 @@ def plot_dual_axis(series1: pd.Series, series2: pd.Series,
 
     return fig
 
+
 def draw_cumulative_return(da: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
     # TODO: Scale secondary factor to same units as primary factor given a start date
     #       Alternatively, start both at 100
@@ -188,16 +204,34 @@ def draw_cumulative_return(da: xr.DataArray, factor_name: str, factor_name_1: st
 
 
 def draw_returns(ret: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
+    da = ret.sel(factor_name=[factor_name, factor_name_1]) / 100
+    return px_bar(da, title=f'Daily Returns of {factor_name} and {factor_name_1} (%)')
+
+
+def draw_zscore(ret: xr.DataArray, vol: xr.DataArray, factor_name: str, factor_name_1: str, vol_type) -> Figure:
+    ret = ret.sel(factor_name=[factor_name, factor_name_1])
+    vol = vol.sel(factor_name=[factor_name, factor_name_1], vol_type=vol_type)
+    zscore = get_zscore(ret, vol, 1)
+    return px_bar(zscore, title=f'Daily Returns of {factor_name} and {factor_name_1} (std, {vol_type}-day vol)')
+
+
+def draw_returns_old(ret: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
+    # TODO: Extract `px.bar(...)` to function named `px_bar()`
+    # TODO: Add zscore chart (Display % and std units? Add toggle?)
+
     df = ret.to_pandas()[[factor_name, factor_name_1]].div(100)
-    return (px.bar(df, barmode='group', 
+    fig = (px.bar(df, barmode='group', 
                    title=f'Daily Returns of {factor_name} and {factor_name_1} (%)',
                    template='plotly_white')
             .update_traces(marker_line_width=0,
                            hovertemplate=None)
             .update_layout(xaxis_title=None,
                            yaxis_title=None,
+                           legend_title_text=None,
+                        #    legend=dict(x=0.01, y=0.99),
                            hovermode='x unified')
-    )
+            )
+    return px_format(fig)
 
 
 def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: list[int]) -> Figure:
@@ -295,7 +329,8 @@ def draw_beta(factor_data: xr.Dataset, factor_name: str, factor_name_1: str) -> 
     ds = beta.dropna(dim='date')
     fig = (px_line(ds, x='date', y='beta', color='cov_type', 
                    title=f'Beta of {factor_name_1} to {factor_name}')
-           .update_yaxes(type="log"))
+        #    .update_yaxes(type="log")
+           )
     
     return fig
 
