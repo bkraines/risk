@@ -13,9 +13,9 @@ def force_data_refresh():
         if st.button('Refresh Data'):
             get_factor_data(read_cache=False)
         st.write(f'Cache target: {CACHE_TARGET}')
-        # if CACHE_TARGET == 'disk':
-        #     last_updated = get_directory_last_updated_time(os.path.join('..', CACHE_DIR, CACHE_FILENAME))
-        #     st.write(f'Last updated: {last_updated}')
+        if CACHE_TARGET == 'disk':
+            last_updated = get_directory_last_updated_time(os.path.join(CACHE_DIR, CACHE_FILENAME))
+            st.write(f'Last updated: {last_updated:%Y-%m-%d %H:%M:%S}')
 
 
 def display_memory_usage():

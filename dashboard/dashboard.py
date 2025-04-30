@@ -27,7 +27,7 @@ pg = st.navigation([st.Page(lambda: feedback(factor_data),
                             title='Correlation Projection',
                             url_path='correlation'),
                     
-                    st.Page(lambda: master(),
+                    st.Page(lambda: master(factor_data),
                             title='Factor Master',
                             url_path='factor_master'),
                     

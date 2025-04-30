@@ -40,10 +40,10 @@ def add_project_root_to_sys_path():
         if project_root not in sys.path:
                 sys.path.insert(0, project_root)
 
-        # Optional: Keep debug prints to verify
-        print("--- Debug Info ---")
-        print(f"Current Working Directory: {os.getcwd()}")
-        print("sys.path (after modification):")  # Added label
-        for p in sys.path:
-                print(f"  - {p}")
-        print("--- End Debug Info ---")
+        # # Optional: Keep debug prints to verify
+        # print("--- Debug Info ---")
+        # print(f"Current Working Directory: {os.getcwd()}")
+        # print("sys.path (after modification):")  # Added label
+        # for p in sys.path:
+        #         print(f"  - {p}")
+        # print("--- End Debug Info ---")
