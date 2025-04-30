@@ -1,5 +1,30 @@
-import os
 import sys
+import os
+from pathlib import Path
+
+
+def set_cwd_to_project_root(markers=["pyproject.toml", "requirements.txt", ".git", "PROJECT_ROOT"]):
+    """
+    Set the working directory to the project root using a list of possible markers.
+    Tries each marker in order and stops when the first is found.
+
+    Parameters
+    ----------
+    markers : list of str
+        Files or directories that indicate the project root.
+    """
+    from pathlib import Path
+    import os
+
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        for marker in markers:
+            if (parent / marker).exists():
+                os.chdir(parent)
+                print(f"Working directory set to: {parent}")
+                return
+    raise FileNotFoundError(f"Project root not found (tried markers: {markers})")
+
 
 
 def add_project_root_to_sys_path():

@@ -2,9 +2,10 @@ from datetime import date, datetime
 from typing import Iterable, Optional
 import streamlit as st
 
+import os
 from risk_lib.data import get_factor_data
-from risk_lib.util import check_memory_usage, get_mtd_range, get_ytd_range, summarize_memory_usage
-from risk_lib.config import CACHE_TARGET, MARKET_EVENTS, TRAILING_WINDOWS
+from risk_lib.util import check_memory_usage, get_mtd_range, get_ytd_range, summarize_memory_usage, get_directory_last_updated_time
+from risk_lib.config import CACHE_TARGET, MARKET_EVENTS, TRAILING_WINDOWS, CACHE_DIR, CACHE_FILENAME
 
 
 def force_data_refresh():
@@ -12,6 +13,9 @@ def force_data_refresh():
         if st.button('Refresh Data'):
             get_factor_data(read_cache=False)
         st.write(f'Cache target: {CACHE_TARGET}')
+        # if CACHE_TARGET == 'disk':
+        #     last_updated = get_directory_last_updated_time(os.path.join('..', CACHE_DIR, CACHE_FILENAME))
+        #     st.write(f'Last updated: {last_updated}')
 
 
 def display_memory_usage():

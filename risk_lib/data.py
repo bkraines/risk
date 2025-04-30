@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import os
 
 import pandas as pd
@@ -6,7 +6,7 @@ import xarray as xr
 
 import yfinance as yf
 
-from risk_lib.util import business_days_ago, xr_pct_change, safe_reindex, cache
+from risk_lib.util import business_days_ago, latest_business_day, xr_pct_change, safe_reindex, cache
 from risk_lib.stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from risk_lib.config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR
 
@@ -50,11 +50,33 @@ def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
     ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
     return ds
 
-
-def get_factor_master(file_name: str = FACTOR_FILENAME, file_dir: str = FACTOR_DIR, sheet_name: str = 'read', index_col: str = 'factor_name') -> pd.DataFrame:
+def read_factor_master(file_name: str = FACTOR_FILENAME, file_dir: str = FACTOR_DIR, sheet_name: str = 'read', index_col: str = 'factor_name') -> pd.DataFrame:
     file_path = os.path.join(file_dir, file_name)
     df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index, ordered=True)
+    return df
+
+def get_factor_master(factor_data: Optional[xr.Dataset] = None, **kwargs) -> pd.DataFrame:
+    """
+    Retrieves factor master, either from `factor_data` if provided or directly from the Excel config file.
+
+    Parameters
+    ----------
+    factor_data : Optional[xr.Dataset], default None
+        If provided, the attributes of coordinate `factor_name` are extracted into a DataFrame.
+    **kwargs : dict
+        Additional keyword arguments optionally passed to `read_factor_master` to override defaults
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the factor master information, with 'factor_name' as a CategoricalIndex.
+    """
+    if factor_data is None:
+        df = read_factor_master(**kwargs)
+    else:
+        df = pd.DataFrame(factor_data.factor_name.attrs).T
+        df.index = pd.CategoricalIndex(df.index, categories=df.index, ordered=True, name='factor_name')
     return df
 
 def get_portfolios(file_name: str = FACTOR_FILENAME, file_dir = FACTOR_DIR, sheet_name: str = 'read_composites', index_col: str = 'portfolio_name') -> pd.DataFrame:
@@ -74,6 +96,11 @@ def is_data_current(ds: xr.Dataset) -> bool:
     date_latest = ds.indexes['date'].max().date()
     date_prior  = business_days_ago(1)
     return date_latest >= date_prior
+
+    # # NEW ATTEMPT
+    # latest_data_date = ds.indexes['date'].max().date()
+    # latest_business_date = latest_business_day()
+    # return latest_data_date >= latest_business_date
 
 
 @cache(CACHE_TARGET)
@@ -127,5 +154,4 @@ def get_factor_data(**kwargs) -> xr.Dataset:
         case 'arraylake':
             kwargs.setdefault("check", is_data_current)
     return build_factor_data(**kwargs)
-
 
