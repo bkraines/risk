@@ -10,6 +10,14 @@ from risk_lib.util import format_date
 from risk_lib.config import HALFLIFES
 from dashboard.interface import add_sidebar_defaults, select_date_range
 
+TABLE_CONFIG = (pd.DataFrame(columns =  ["variable",   "name",               "format"],
+                             data    = [["vol",        "Volatility (% ann)", "%.1f"],
+                                        ["zscore",     "Return (std)",       "%.1f"],
+                                        ["ret",        "Return (%)",         "%.2f"],
+                                        ["zscore_abs", "Return (|std|)",     "%.1f"],
+                                        ]
+                                ).set_index("variable"))
+
 
 def build_monitor_table(factor_data: xr.Dataset, vol_type) -> pd.DataFrame:
     """Builds a monitor table for the given date."""
@@ -41,11 +49,14 @@ def build_monitor_table(factor_data: xr.Dataset, vol_type) -> pd.DataFrame:
     df.name = f'Returns as of {latest_str}, vol as of {incoming_str}'
     
     return(df)
-
     
 
-def build_dashboard(factor_data):
+def build_dashboard(factor_data, table_config=None):
+    # TODO: Use Ag-grid instead of streamlit for better customization
+    # TODO: Incorporate column color into table_config. Generalize `style_zscore_abs`.
 
+    if table_config is None:
+        table_config = TABLE_CONFIG
     model_options = HALFLIFES
     model_default = model_options.index(63) if 63 in model_options else 0
     
@@ -61,35 +72,11 @@ def build_dashboard(factor_data):
     
     df = build_monitor_table(factor_data, vol_type)
     st.write(df.name)
-    # TODO: Use Ag-grid instead of streamlit for better customization
-    
     styler = df.style.apply(style_zscore_abs, subset=['zscore_abs'])
-
-    st.dataframe(
-        # df,
-        styler,
-        height=700,
-        width=650,
-        column_config={
-            "vol": st.column_config.NumberColumn(
-            "Volatility (% ann)",
-            format="%.1f",
-            ),
-            "zscore": st.column_config.NumberColumn(
-            "Return (std)",
-            format="%.1f"
-            ),
-            "ret": st.column_config.NumberColumn(
-            "Return (%)",
-            format="%.2f"
-            ),
-            "zscore_abs": st.column_config.NumberColumn(
-            "Return (|std|)",
-            format="%.1f"
-            ),
-            })
-
-
+    column_config = {column: st.column_config.NumberColumn(label=config["name"], 
+                                                           format=config["format"])
+                     for column, config in table_config.iterrows()}
+    st.dataframe(styler, height=700, width=650, column_config=column_config)
 
 
     # # TODO: Add peak memory usage (before deleting factor_data)
