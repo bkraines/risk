@@ -1,7 +1,7 @@
 from typing import Union, Literal, Optional
 
-from numpy import sqrt, cos, sin, arctan2, array, identity
-import numpy as np
+from numpy import sqrt, cos, sin, arctan2, array #, identity
+# import numpy as np
 import pandas as pd
 import xarray as xr
 xr.set_options(keep_attrs=True,
@@ -14,6 +14,7 @@ import plotly.io as pio
 import plotly.graph_objects as go
 # from plotly.graph_objs import Figure
 
+# from risk_lib.util import to_pandas_strict
 
 def prepare_correlation(corr: xr.DataArray, transformation=None, start_date=None) -> pd.DataFrame:
     factor_master = pd.DataFrame(corr.asset.attrs).T
@@ -43,36 +44,40 @@ def transform_coordinates(coordinates: pd.DataFrame, transformation_type=None, f
     if coordinates_initial is None:
         coordinates_initial = coordinates
     
-    if transformation_type == 'rotate':
-        v = coordinates.loc[factor]
-        x, y = v
-        theta = arctan2(y, x)
-        return coordinates.pipe(rotate, -theta)
+    match transformation_type:
+        case 'rotate':
+            v = coordinates.loc[factor]
+            x, y = v
+            theta = arctan2(y, x)
+            return coordinates.pipe(rotate, -theta)
     
-    if transformation_type == 'rotate_initial':
+        case 'rotate_initial':
             v = coordinates_initial.loc[factor]
             x, y = v
             theta = arctan2(y, x)
             return coordinates.pipe(rotate, -theta)
     
-    if transformation_type == 'normalize':
-        v = coordinates.loc[factor]
-        x, y = v
-        theta = arctan2(y, x)
-        length = sqrt(sum(v**2))
-        return coordinates.pipe(rotate, -theta).div(length)
-    
-    if transformation_type == 'rotate_list':
-        thetas = {}
-        if factor_list is None:
-            factor_list = ['SPY', 'TLT']
-        
-        for factor in factor_list:
+        case 'normalize':
             v = coordinates.loc[factor]
             x, y = v
-            thetas[factor] = arctan2(y, x)
-        theta_avg = sum(thetas.values()) / len(thetas)
-        return coordinates.pipe(rotate, -theta_avg)
+            theta = arctan2(y, x)
+            length = sqrt(sum(v**2))
+            return coordinates.pipe(rotate, -theta).div(length)
+    
+        case 'rotate_list':
+            thetas = {}
+            if factor_list is None:
+                factor_list = ['SPY', 'TLT']
+            
+            for factor in factor_list:
+                v = coordinates.loc[factor]
+                x, y = v
+                thetas[factor] = arctan2(y, x)
+            theta_avg = sum(thetas.values()) / len(thetas)
+            return coordinates.pipe(rotate, -theta_avg)
+
+        case _:
+            return coordinates
         
 
 
@@ -124,27 +129,17 @@ def mds_ts_df(corr: xr.DataArray, start_date=None, transformation=None, factor='
     if transformation == 'rotate_initial':
         date = dates.max()
         # Choose halflife close to 63 days:
-        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # * 0 + np.identity(len(corr.asset))
+        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # _strict() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed) #init=coordinates) 
         transformed_initial = transform_coordinates(coordinates, 'rotate', factor='SPY')
         transformation = None
     else:
         transformed_initial = None
-        
-    # for date in dates:
-    #     df = corr.sel(date=date, corr_type=63).to_pandas()
-    #     coordinates = multidimensional_scaling(df, init=transformed) #init=coordinates) 
-    #     transformed = transform_coordinates(coordinates, transformation, factor=factor, coordinates_initial=transformed_initial)
-    #     mds_dict[date] = transformed
-    #     return (pd.concat(mds_dict)
-    #             .rename_axis(index=['date', df.index.name])
-    #             )
-
   
     mds_dict = {}
     for date in dates:
         # Choose halflife close to 63 days
-        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # * 0 + np.identity(len(corr.asset))
+        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() #_strict() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed_initial, n_init=1) #init=transformed) 
         transformed = transform_coordinates(coordinates, transformation, factor=factor, 
                                             factor_list=None, coordinates_initial=transformed_initial)
@@ -186,8 +181,8 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
     
     args_animation = {'animation_frame': 'date', 'animation_group': 'factor_name'}  if 'date' in df.columns else {}
     args_format    = {'template': 'plotly_white', 'height': 750, 'width': 750}
-    # args_size      = {'size': 'size', 'size_max': 15} if 'size' in df.columns else {}
-    args_size      = {'size': 'marker_size'} if 'marker_size' in df.columns else {}
+    args_size      = {'size': 'size', 'size_max': 15} if 'size' in df.columns else {}
+    # args_size      = {'size': 'marker_size'} if 'marker_size' in df.columns else {}
     args_symbol    = {'symbol': 'marker_symbol'} if 'marker_symbol' in df.columns else {}
     # args_textcolor = ['black' if condition else 'lightgray' for condition in (df['asset']=='SPY')]
     # args_textcolor = ['black' if asset == 'SPY' else 'lightgray' for asset in df['asset']]
@@ -213,12 +208,6 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
                           )
            .update_layout(xaxis_title=None,
                           yaxis_title=None,
-                        #   xaxis_showticklabels=False,
-                        #   yaxis_showticklabels=False,
-                        #   xaxis_showgrid=False,
-                        #   yaxis_showgrid=False,
-                        #   xaxis_showline=True,
-                        #   yaxis_showline=True,
                           xaxis_scaleanchor="y", 
                           xaxis_scaleratio=1,
                           yaxis_tickvals = [-0.5, 0, 0.5],
@@ -226,7 +215,6 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
            )
     
     # fig.for_each_trace(lambda t: t.update(textfont_color=t.marker.color)) #, textposition='top center'))
-
     
     # fig.update_layout(yaxis_tickvals = fig)
     
