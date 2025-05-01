@@ -173,13 +173,29 @@ def get_zscore(ret: xr.DataArray, vol: xr.DataArray, shift=1) -> xr.DataArray:
     return zscore.rename('zscore')
 
 
-def distance_from_moving_average(cret: xr.DataArray, window: int = 200) -> xr.DataArray:
+def distance_from_moving_average(cret: xr.DataArray, window: int = 200, shift: int = 1) -> xr.DataArray:
     # TODO: Accomodate different diffusions with a `factor_return` function
     cret_ma = cret.rolling(date=window).mean()
-    dist_ma = 100 * (cret / cret_ma - 1)
+    dist_ma = 100 * (cret / cret_ma.shift({'date': shift}) - 1)
     return dist_ma.rename('dist_ma')
 
 
 def get_dist_ma_set(cret: xr.DataArray, windows: List[int]) -> xr.DataArray:
-    return xr.concat([distance_from_moving_average(cret, w) for w in windows],
+    return xr.concat([distance_from_moving_average(cret, w) 
+                      for w in windows],
                      dim=pd.Index(windows, name='ma_type'))
+    
+
+def days_from_moving_average(cret: xr.DataArray, vol: xr.DataArray, window: int = 200, shift: int = 1) -> xr.DataArray:
+    dist_ma = distance_from_moving_average(cret, window)
+    daily_vol = vol / sqrt(252)
+    days_ma = (dist_ma / daily_vol.shift({'date': shift}))
+    return days_ma.rename('days_ma')
+
+
+def get_days_ma_set(cret: xr.DataArray, vol: xr.DataArray, windows: List[int]) -> xr.DataArray:
+    return xr.concat([days_from_moving_average(cret, vol, w) 
+                      for w in windows],
+                     dim=pd.Index(windows, name='ma_type'))
+
+

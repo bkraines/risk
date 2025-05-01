@@ -358,6 +358,15 @@ def draw_distance_from_ma(dist_ma: xr.DataArray, factor_name: str, factor_name_1
     return fig
 
 
+def draw_days_from_ma(days_ma: xr.DataArray, factor_name: str, factor_name_1: str, window: int = 200, vol_type: int = 63) -> Figure:
+    # _cret = cret.sel(factor_name=[factor_name, factor_name_1])
+    # dist_ma = distance_from_moving_average(_cret, window)
+    _days_ma = days_ma.sel(factor_name=[factor_name, factor_name_1], ma_type=window, vol_type=vol_type)
+    fig = px_line(_days_ma, x='date', y='days_ma', color='factor_name', 
+                  title=f'Distance from {window}-day Moving Average (std, {vol_type}-day halflife)')
+    return fig
+
+
 # def draw_distance_from_ma_old(cret: xr.DataArray, factor_name: str, factor_name_1: str, window: int = 200) -> Figure:
 #     _cret = cret.sel(factor_name=[factor_name, factor_name_1])
 #     dist_ma = distance_from_moving_average(_cret, window)
