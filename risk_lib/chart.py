@@ -12,7 +12,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 from risk_lib.config import IMAGE_DIR
-from risk_lib.stats import get_beta_pair, get_zscore
+from risk_lib.stats import get_beta_pair, get_zscore, distance_from_moving_average
 
 # TODO: Share chart dimensions and template by extracting `fig_format_default` dict from `px_line`
 # TODO: Pull ploty template into a constant:
@@ -261,7 +261,8 @@ def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: list[int]) ->
                'vol_type': vol_type,
                }
     ds = vol.sel(**fig_sel).dropna(dim='date')
-    fig = px_line(ds, x='date', y='vol', color='vol_type', title=f'Volatility of {factor_name}')
+    fig = px_line(ds, x='date', y='vol', color='vol_type', 
+                  title=f'Volatility of {factor_name}')
     return fig
 
 
@@ -296,7 +297,8 @@ def draw_correlation(corr: xr.DataArray, factor_name: str, factor_name_1: str, c
                'corr_type': corr_type,
                }
     ds = corr.sel(**fig_sel).dropna(dim='date')
-    fig = px_line(ds, x='date', y='corr', color='corr_type', title=f'Correlation of {factor_name} and {factor_name_1}')
+    fig = px_line(ds, x='date', y='corr', color='corr_type', 
+                  title=f'Correlation of {factor_name} and {factor_name_1}')
     return fig
     
 
@@ -342,5 +344,23 @@ def draw_volatility_ratio(vol: xr.DataArray, factor_name: str, factor_name_1: st
     vol_ratio = vol_1 / vol_0
     
     ds = vol_ratio.dropna(dim='date')
-    fig = px_line(ds, x='date', y='vol', color='vol_type', title=f'Volatility Ratio of {factor_name_1} to {factor_name}')
+    fig = px_line(ds, x='date', y='vol', color='vol_type', 
+                  title=f'Volatility Ratio of {factor_name_1} to {factor_name}')
     return fig
+
+
+def draw_distance_from_ma(dist_ma: xr.DataArray, factor_name: str, factor_name_1: str, window: int = 200) -> Figure:
+    # _cret = cret.sel(factor_name=[factor_name, factor_name_1])
+    # dist_ma = distance_from_moving_average(_cret, window)
+    _dist_ma = dist_ma.sel(factor_name=[factor_name, factor_name_1], ma_type=window)
+    fig = px_line(_dist_ma, x='date', y='dist_ma', color='factor_name', 
+                  title=f'Distance from {window}-day Moving Average (%)')
+    return fig
+
+
+# def draw_distance_from_ma_old(cret: xr.DataArray, factor_name: str, factor_name_1: str, window: int = 200) -> Figure:
+#     _cret = cret.sel(factor_name=[factor_name, factor_name_1])
+#     dist_ma = distance_from_moving_average(_cret, window)
+#     fig = px_line(dist_ma, x='date', y='dist_ma', color='factor_name', 
+#                   title=f'Distance from {window}-day Moving Average (%)')
+#     return fig
