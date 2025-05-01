@@ -3,8 +3,10 @@ from plotly.graph_objs import Figure
 
 import os
 
+import numpy as np
 import pandas as pd
 import xarray as xr
+import scipy.stats as stats
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -12,10 +14,11 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 from risk_lib.config import IMAGE_DIR
-from risk_lib.stats import get_beta_pair, get_zscore, distance_from_moving_average
+from risk_lib.stats import get_beta_pair, get_zscore
 
 # TODO: Share chart dimensions and template by extracting `fig_format_default` dict from `px_line`
-# TODO: Pull ploty template into a constant:
+# TODO: Pull ploty template into a constant
+# TODO: Pull default width and height into a constant
 PLOTLY_TEMPLATE = 'plotly_white'
 
 
@@ -373,3 +376,71 @@ def draw_days_from_ma(days_ma: xr.DataArray, factor_name: str, factor_name_1: st
 #     fig = px_line(dist_ma, x='date', y='dist_ma', color='factor_name', 
 #                   title=f'Distance from {window}-day Moving Average (%)')
 #     return fig
+
+
+
+def plot_qq(data, dist=stats.norm, title='QQ Plot', marker_color='blue', line_color='#B0B0B0'):
+    # https://chatgpt.com/share/68139a22-255c-8007-89f5-b7d9d8feedf8
+    """
+    Create a QQ plot comparing data quantiles to a theoretical distribution.
+    
+    Parameters:
+        data (array-like): Sample data
+        dist (scipy.stats distribution): Theoretical distribution to compare against (default: normal)
+        title (str): Plot title
+        marker_color (str): Color of QQ plot points
+        line_color (str): Color of 45-degree reference line
+        
+    Returns:
+        plotly.graph_objects.Figure: The QQ plot figure
+    """
+    data = np.asarray(data)
+    sorted_data = np.sort(data)
+    n = len(data)
+    probs = np.linspace(0.5 / n, 1 - 0.5 / n, n)
+    theoretical_quantiles = dist.ppf(probs)
+
+    min_q = min(min(theoretical_quantiles), min(sorted_data))
+    max_q = max(max(theoretical_quantiles), max(sorted_data))
+
+    fig = go.Figure()
+
+    # 45-degree line
+    fig.add_trace(go.Scatter(
+        x=[min_q, max_q], y=[min_q, max_q],
+        mode='lines',
+        line=dict(color=line_color, width=1.5),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
+
+    # Data points
+    fig.add_trace(go.Scatter(
+        x=theoretical_quantiles, y=sorted_data,
+        mode='markers',
+        marker=dict(color=marker_color, size=6),
+        showlegend=False
+    ))
+
+    # Layout
+    fig.update_layout(
+        title=title,
+        xaxis_title='Theoretical Quantiles',
+        yaxis_title='Sample Quantiles',
+        width=600,
+        height=600,
+        template='plotly_white',
+        margin=dict(l=60, r=20, t=40, b=60),
+        xaxis=dict(scaleanchor='y', scaleratio=1),
+        yaxis=dict(scaleanchor='x', scaleratio=1),
+    )
+
+    return fig
+
+
+def draw_zscore_qq(ret: xr.DataArray, vol: xr.DataArray, factor_name: str, vol_type) -> Figure:
+    ret = ret.sel(factor_name=factor_name)
+    vol = vol.sel(factor_name=factor_name, vol_type=vol_type)
+    zscore = get_zscore(ret, vol, 1)
+    fig = plot_qq(zscore, title=f'QQ Plot of {factor_name} Returns over {vol_type}-day Volatility')
+    return fig
