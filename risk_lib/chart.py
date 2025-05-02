@@ -396,8 +396,95 @@ def draw_days_from_ma(days_ma: xr.DataArray, factor_name: str, factor_name_1: st
 #         ))
         
 
+def plot_qq_df(
+    df: pd.DataFrame,
+    dist: str = "norm",
+    title: str = "QQ Plot",
+    width: int = 600,
+    height: int = 600,
+) -> go.Figure:
+    """
+    Generate a QQ-plot comparing columns of a DataFrame to a theoretical distribution.
 
-def plot_qq_df(df: pd.DataFrame, dist=stats.norm, title='QQ Plot'):
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame where each column is a variable to be plotted.
+    dist : str, default "norm"
+        Theoretical distribution to compare against. Passed to scipy.stats.
+    title : str, default "QQ Plot"
+        Title of the plot.
+    width : int, default 600
+        Width of the figure in pixels.
+    height : int, default 600
+        Height of the figure in pixels.
+
+    Returns
+    -------
+    go.Figure
+        A Plotly figure object showing the QQ plot.
+    """
+    df = df.dropna()
+    n = len(df)
+    if n == 0:
+        raise ValueError("Input DataFrame is empty after dropping missing values.")
+
+    probs = np.linspace(0.5 / n, 1 - 0.5 / n, n)
+    theoretical_quantiles = getattr(stats, dist).ppf(probs)
+
+    fig = go.Figure()
+
+    for col in df.columns:
+        sorted_series = df[col].sort_values()
+        sorted_values = sorted_series.values
+        sorted_dates = sorted_series.index.strftime("%Y-%m-%d")
+
+        fig.add_trace(
+            go.Scatter(
+                x=theoretical_quantiles,
+                y=sorted_values,
+                mode="markers",
+                name=col,
+                text=sorted_dates,
+                hovertemplate=(
+                    f"<b>{col}</b><br>"
+                    "%{text}<br>"
+                    "Theoretical: %{x:.2f}<br>"
+                    "Observed: %{y:.2f}<extra></extra>"
+                ),
+            )
+        )
+
+    # Add 45-degree reference line
+    all_values = df.values.flatten()
+    min_val = np.min(all_values)
+    max_val = np.max(all_values)
+    fig.add_trace(
+        go.Scatter(
+            x=[min_val, max_val],
+            y=[min_val, max_val],
+            mode="lines",
+            line=dict(color="rgba(204, 204, 204, 1)", width=1),
+            showlegend=False,
+            hoverinfo="skip",
+        )
+    )
+
+    fig.update_layout(
+        title=title,
+        xaxis_title=f"Theoretical Quantiles ({dist})",
+        yaxis_title="Observed Values",
+        template="plotly_white",
+        width=width,
+        height=height,
+    )
+
+    fig.update_yaxes(scaleanchor="x", scaleratio=1)
+
+    return fig
+
+
+def plot_qq_df_old(df: pd.DataFrame, dist=stats.norm, title='QQ Plot'):
     """
     Create a QQ plot for each column in a DataFrame against a theoretical distribution.
 
@@ -523,4 +610,33 @@ def draw_zscore_qq(ret: xr.DataArray, vol: xr.DataArray, factor_name: str, vol_t
     vol = vol.sel(factor_name=factor_name, vol_type=vol_type)
     zscore = get_zscore(ret, vol, 1)
     fig = plot_qq(zscore, title=f'QQ Plot of {factor_name} Returns over {vol_type}-day Volatility')
+    return fig
+
+
+def draw_zscore_qq_multi(ret: xr.DataArray, vol: xr.DataArray, factor_vol_pairs: list[tuple[str, str]]) -> Figure:
+    """
+    Draw a QQ plot comparing standardized returns (z-scores) across multiple factors and vol models.
+
+    Parameters
+    ----------
+    ret : xr.DataArray
+        Array of returns with a 'factor_name' coordinate.
+    vol : xr.DataArray
+        Array of volatility values with 'factor_name' and 'vol_type' coordinates.
+    factor_vol_pairs : list of tuple of str
+        List of (factor_name, vol_type) pairs for which to display z-scores.
+
+    Returns
+    -------
+    Figure
+        Plotly figure containing the QQ plot with all specified factors.
+    """
+    # TODO: Alternatively accept array of z-scores directly
+    zscore_dict = {f"{f} ({v})": get_zscore(ret.sel(factor_name=f),
+                                            vol.sel(factor_name=f, vol_type=v),
+                                                        ).to_series()
+                   for f, v in factor_vol_pairs}
+    df = pd.concat(zscore_dict, axis=1).dropna()
+    fig = plot_qq_df(df, title="QQ Plot")
+
     return fig
