@@ -11,6 +11,7 @@ from dashboard.dashboard_timeseries import build_dashboard as timeseries
 from dashboard.dashboard_mds        import build_dashboard as mds
 from dashboard.dashboard_master     import build_dashboard as master
 from dashboard.dashboard_monitor    import build_dashboard as monitor
+from dashboard.dashboard_volfitness import build_dashboard as volfitness
 # from risk_lib.util import add_sidebar_defaults
 
 factor_data = get_factor_data()
@@ -34,6 +35,11 @@ pg = st.navigation([st.Page(lambda: feedback(factor_data),
                     st.Page(lambda: monitor(factor_data),
                             title='Performance',
                             url_path='monitor'),
+                    
+                    st.Page(lambda: volfitness(factor_data),
+                            title='Vol Fitness',
+                            url_path='volfitness'),
+                    
                     ])
 
 # add_sidebar_defaults()

@@ -378,6 +378,86 @@ def draw_days_from_ma(days_ma: xr.DataArray, factor_name: str, factor_name_1: st
 #     return fig
 
 
+# def plot_qq_multi(df: pd.DataFrame, dist=stats.norm, title: str = 'QQ Plot') -> Figure:
+#     fig = go.Figure()
+    
+#     df = df.dropna()
+#     n = len(df[col])
+#     probs = np.linspace(0.5 / n, 1 - 0.5 / n, n)
+#     theoretical_quantiles = dist.ppf(probs)
+#     observed_quantiles = np.sort(df[col])
+#     for col in df.columns:
+#         fig.add_trace(go.Scatter(
+#             x=theoretical_quantiles, 
+#             y=observed_quantiles,
+#             mode='markers',
+#             name=col,
+#             showlegend=True
+#         ))
+        
+
+
+def plot_qq_df(df: pd.DataFrame, dist=stats.norm, title='QQ Plot'):
+    """
+    Create a QQ plot for each column in a DataFrame against a theoretical distribution.
+
+    Parameters:
+        df (pd.DataFrame): Each column will be treated as an independent dataset.
+        dist (scipy.stats distribution): Theoretical distribution to compare against (default: normal).
+        title (str): Plot title.
+
+    Returns:
+        plotly.graph_objects.Figure: The QQ plot figure.
+    """
+    fig = go.Figure()
+
+    # Collect all quantiles to get consistent axes
+    all_data = []
+    for col in df.columns:
+        data = df[col].dropna().to_numpy()
+        n = len(data)
+        if n == 0:
+            continue
+        probs = np.linspace(0.5 / n, 1 - 0.5 / n, n)
+        sorted_data = np.sort(data)
+        theoretical = dist.ppf(probs)
+        fig.add_trace(go.Scatter(
+            x=theoretical,
+            y=sorted_data,
+            mode='markers',
+            name=col,
+            showlegend=True,
+        ))
+        all_data.extend(sorted_data)
+        all_data.extend(theoretical)
+
+    # 45-degree line
+    if all_data:
+        qmin, qmax = min(all_data), max(all_data)
+        fig.add_trace(go.Scatter(
+            x=[qmin, qmax], y=[qmin, qmax],
+            mode='lines',
+            line=dict(color='rgba(0,0,0,0.4)', width=1.5),  # darker than gridlines
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Theoretical Quantiles',
+        yaxis_title='Sample Quantiles',
+        width=600,
+        height=600,
+        template='plotly_white',
+        margin=dict(l=60, r=20, t=40, b=60),
+        xaxis=dict(scaleanchor='y', scaleratio=1),
+        yaxis=dict(scaleanchor='x', scaleratio=1),
+    )
+
+    return fig
+
+
+        
 
 def plot_qq(data, dist=stats.norm, title='QQ Plot', marker_color='blue', line_color='#B0B0B0'):
     # https://chatgpt.com/share/68139a22-255c-8007-89f5-b7d9d8feedf8
