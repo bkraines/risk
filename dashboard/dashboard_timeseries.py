@@ -18,7 +18,6 @@ def build_dashboard(factor_data):
         vol_type = st.selectbox('Volatility Halflife for Z-Score', options=HALFLIFES, index=1)
         ma_type: int = st.number_input("Moving Average Window", value=200, min_value=1, step=1, format="%d")
     
-    
     # Moving average must be computed before the date sliced
     # Can compute here or in `get_factor_data`
     factor_data['dist_ma'] = get_dist_ma_set(factor_data.cret, windows=[ma_type])
@@ -36,7 +35,7 @@ def build_dashboard(factor_data):
             'vol_1':     draw_volatility(ds.vol, factor_name=factor_1, vol_type=HALFLIFES),
             'vol_2':     draw_volatility(ds.vol, factor_name=factor_2, vol_type=HALFLIFES),
             'vol_ratio': draw_volatility_ratio(ds.vol, factor_name=factor_1, factor_name_1=factor_2, vol_type=HALFLIFES),
-            'qqplot':    draw_zscore_qq(ds.ret, ds.vol, factor_name=factor_1, vol_type=vol_type),
+            'qqplot':    draw_zscore_qq(ds.ret, ds.vol, [(factor_1, vol_type), (factor_2, vol_type)]),
             }
 
     for fig in figs.values():

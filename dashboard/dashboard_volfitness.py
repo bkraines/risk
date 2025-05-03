@@ -1,11 +1,11 @@
 import streamlit as st
 
-import pandas as pd
+from typing import Any
+
 import xarray as xr
 
 from risk_lib.data import get_factor_data
-from risk_lib.stats import get_zscore
-from risk_lib.chart import plot_qq_df, draw_zscore_qq_multi
+from risk_lib.chart import draw_zscore_qq
 from risk_lib.config import HALFLIFES
 from dashboard.interface import select_date_range
 from dashboard.interface import add_sidebar_defaults
@@ -13,40 +13,23 @@ from dashboard.interface import add_sidebar_defaults
 def build_dashboard(factor_data: xr.Dataset) -> None:
     factor_list = factor_data['factor_name'].values
     with st.sidebar:
+        # TODO: Allow selection of arbitrary number of factors
         factor_1   = st.selectbox('Factor 1', options=factor_list, index=0)
         vol_type_1 = st.selectbox('Volatility 1', options=HALFLIFES, index=1)
         factor_2   = st.selectbox('Factor 2', options=factor_list, index=1)
         vol_type_2 = st.selectbox('Volatility 2', options=HALFLIFES, index=1)
         start_date, end_date = select_date_range(factor_data.indexes['date'], default_option='max')
     
-    
-    qq_series: list[tuple[str, str]] = [(factor_1, vol_type_1), 
+    qq_series: list[tuple[str, Any]] = [(factor_1, vol_type_1), 
                                         (factor_2, vol_type_2)]
     da = factor_data.sel(date=slice(start_date, end_date))
-    fig = draw_zscore_qq_multi(da.ret, da.vol, qq_series)
+    fig = draw_zscore_qq(da.ret, da.vol, qq_series)
     
-    # da = (get_zscore(factor_data.ret, factor_data.vol)
-    #       .sel(date=slice(start_date, end_date)))
-    # da = factor_data['zscore'].sel(date=slice(start_date, end_date))
-    # fig = draw_zscore_qq_multi(da, qq_series)
-    
-    
-    # df = pd.concat({f'{factor_1}, {vol_type_1}': da.sel(factor_name=factor_1, vol_type=vol_type_1).to_series(),
-    #                 f'{factor_2}, {vol_type_2}': da.sel(factor_name=factor_2, vol_type=vol_type_2).to_series(),
-    #                 }, axis=1).dropna()
-    
-    # fig = plot_qq_df(df)
     st.plotly_chart(fig)
+    st.write('(Observed values occur with frequency of theoretical values.)')
     
-    
-    # figs = {'fig_1': draw_zscore_qq(da.ret, da.vol, factor_name=factor_1, vol_type=vol_type_1),
-    #         'fig_2': draw_zscore_qq(da.ret, da.vol, factor_name=factor_2, vol_type=vol_type_2)}
-    
-    # for fig in figs.values():
-    #     st.plotly_chart(fig)
-        
-    add_sidebar_defaults()
-    
+    add_sidebar_defaults()    
+
 
 if __name__ == "__main__":
     factor_data = get_factor_data()
