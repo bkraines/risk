@@ -1,5 +1,3 @@
-# config.py
-
 from typing import Literal
 from datetime import datetime
 
@@ -10,7 +8,7 @@ ARRAYLAKE_REPO = 'finance-demos/demo-icechunk'
 FACTOR_DIR = 'risk_lib'
 FACTOR_FILENAME = 'factor_master.xlsx'
 
-CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'disk'
+CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'streamlit'
 STREAMLIT_CACHE = False
 
 # In case of `streamlit` caching, limit RAM usage by restricting `HALFLIFES`
@@ -24,7 +22,7 @@ COV_TYPES = {str(h): {'vol_type': h,
              for h in HALFLIFES}
 
 # Trailing windows
-TRAILING_WINDOWS = {
+TRAILING_WINDOWS: dict[str, int] = {
     "1d": 1,
     "5d": 5,
     "1m": 21,
