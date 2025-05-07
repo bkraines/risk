@@ -1,1 +1,1 @@
-web: streamlit run dashboard\dashboard.py
+web: streamlit run dashboard\dashboard_heroku.py
