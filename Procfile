@@ -1,1 +1,1 @@
-web: streamlit run dashboard_heroku.py
+web: streamlit run dashboard_heroku.py --server.port=$PORT --server.enableCORS=false
