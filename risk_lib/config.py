@@ -7,8 +7,9 @@ CACHE_FILENAME = 'factor_data.zarr'
 ARRAYLAKE_REPO = 'finance-demos/demo-icechunk'
 FACTOR_DIR = 'risk_lib'
 FACTOR_FILENAME = 'factor_master.xlsx'
+FACTOR_SET: Literal['read', 'read_short'] = 'read'    
 
-CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'streamlit'
+CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'disk' #'streamlit'
 STREAMLIT_CACHE = False
 
 # In case of `streamlit` caching, limit RAM usage by restricting `HALFLIFES`

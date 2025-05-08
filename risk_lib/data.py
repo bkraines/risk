@@ -8,18 +8,17 @@ import yfinance as yf
 
 from risk_lib.util import business_days_ago, latest_business_day, xr_pct_change, safe_reindex, cache
 from risk_lib.stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
-from risk_lib.config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR
+from risk_lib.config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
 
 def get_yahoo_data(ticker, field_name):
     # TODO: Check cache first
     # cache.columns.get_level_values(1)
     return yf.download(ticker, auto_adjust=False)[field_name].squeeze()
 
-
-def get_yahoo_data_set(tickers, field_name, asset_names=None):
+def get_yahoo_data_set(tickers, field_name, asset_names=None, batch=False):
     # TODO: Possibly save time by sending yfinance full list of tickers instead of looping
     if asset_names is None:
-        asset_names = tickers
+        asset_names = tickers    
     return (pd.DataFrame({asset_name: get_yahoo_data(ticker, field_name) 
                          for asset_name, ticker in zip(asset_names, tickers)})
             .rename_axis(index='date', columns='factor_name'))
@@ -50,7 +49,7 @@ def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
     ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
     return ds
 
-def read_factor_master(file_name: str = FACTOR_FILENAME, file_dir: str = FACTOR_DIR, sheet_name: str = 'read', index_col: str = 'factor_name') -> pd.DataFrame:
+def read_factor_master(file_name: str = FACTOR_FILENAME, file_dir: str = FACTOR_DIR, sheet_name: str = FACTOR_SET, index_col: str = 'factor_name') -> pd.DataFrame:
     file_path = os.path.join(file_dir, file_name)
     df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index, ordered=True)
@@ -104,9 +103,10 @@ def is_data_current(ds: xr.Dataset) -> bool:
 
 
 @cache(CACHE_TARGET)
-def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
+def build_factor_data(halflifes: List[int], factor_set='risk') -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
+    # TODO: Refactor retrieving yahoo returns and building portfolio returns into separate functions
     factor_master = get_factor_master(file_name='factor_master.xlsx', sheet_name=factor_set)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
@@ -123,19 +123,23 @@ def build_factor_data(halflifes: List[int], factor_set='read') -> xr.Dataset:
                                    periods=1,
                                    diffusion_map=diffusion_map, 
                                    multiplier_map=multiplier_map)
+    ret_list = [ret_yf]
     
-    # factor_list_composite = factor_master.query('source==composite').index
-    portfolios_weights = (get_portfolios()
-                        #   .loc[factor_list_composite]
-                          .pipe(safe_reindex, factor_master)
-                          .fillna(0)
-                          .loc[factor_list_yf]
-                          )
-    portfolios_ret = ret_yf @ portfolios_weights
+    factor_list_composite = factor_master.query('source==composite').index
+    if not factor_list_composite.empty:
+        portfolios_weights = (get_portfolios()
+                            #   .loc[factor_list_composite]
+                            .pipe(safe_reindex, factor_master)
+                            .fillna(0)
+                            .loc[factor_list_yf]
+                            )
+        portfolios_ret = ret_yf @ portfolios_weights
+        ret_list.append(portfolios_ret)
+    
     levels_latest = levels_yf.iloc[-1]
 
     factor_data = xr.Dataset()
-    factor_data['ret']  = pd.concat([ret_yf, portfolios_ret], axis=1).rename_axis(columns='factor_name')
+    factor_data['ret']  = pd.concat(ret_list, axis=1).rename_axis(columns='factor_name')
     factor_data['cret'] = accumulate_returns_set(factor_data['ret'].to_pandas(), diffusion_map, levels_latest, multiplier_map)
     factor_data['vol']  = get_volatility_set(factor_data['ret'], halflifes)
     factor_data['corr'] = get_correlation_set(factor_data['ret'], halflifes)

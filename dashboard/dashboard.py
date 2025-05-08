@@ -16,7 +16,8 @@ from dashboard.dashboard_volfitness import build_dashboard as volfitness
 
 factor_data = get_factor_data()
 
-pg = st.navigation([st.Page(lambda: feedback(factor_data), 
+pg = st.navigation([
+                    st.Page(lambda: feedback(factor_data), 
                             title='Market Feedback',
                             url_path='feedback'), 
                     

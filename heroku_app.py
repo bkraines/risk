@@ -1,1 +1,1 @@
-import dashboard.dashboard_helloworld
+import dashboard.dashboard

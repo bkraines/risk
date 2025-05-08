@@ -30,6 +30,12 @@ import arraylake as al
 
 
 def safe_reindex(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+    """
+    Safely reindex one DataFrame to match the index of another.
+
+    Ensures that all index values in `df1` exist in `df2` before reindexing.
+    Raises an AssertionError if any index in `df1` is not present in `df2`.
+    """
     assert df1.index.isin(df2.index).all()
     return df1.reindex(df2.index)
 

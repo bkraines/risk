@@ -15,7 +15,7 @@ def build_dashboard(factor_data):
         factor_1 = st.selectbox('Factor 1', options=factor_list, index=0)
         factor_2 = st.selectbox('Factor 2', options=factor_list, index=1)
         start_date, end_date = select_date_range(factor_data.indexes['date'], default_option='1y')
-        vol_type = st.selectbox('Volatility Halflife for Z-Score', options=HALFLIFES, index=1)
+        vol_type = st.selectbox('Volatility Halflife for Z-Score', options=HALFLIFES, index=0)
         ma_type: int = st.number_input("Moving Average Window", value=200, min_value=1, step=1, format="%d")
     
     # Moving average must be computed before the date sliced
