@@ -50,8 +50,10 @@ def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
     return ds
 
 def read_factor_master(file_name: str = FACTOR_FILENAME, file_dir: str = FACTOR_DIR, sheet_name: str = FACTOR_SET, index_col: str = 'factor_name') -> pd.DataFrame:
-    file_path = os.path.join(file_dir, file_name)
-    df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
+    # FIXME: I moved to a flat directory structure
+    # file_path = os.path.join(file_dir, file_name)
+    # df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
+    df = pd.read_excel(file_name, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index, ordered=True)
     return df
 
@@ -103,7 +105,7 @@ def is_data_current(ds: xr.Dataset) -> bool:
 
 
 @cache(CACHE_TARGET)
-def build_factor_data(halflifes: List[int], factor_set='risk') -> xr.Dataset:
+def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET) -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
     # TODO: Refactor retrieving yahoo returns and building portfolio returns into separate functions
