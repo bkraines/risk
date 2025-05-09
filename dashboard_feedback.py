@@ -1,10 +1,10 @@
 import streamlit as st
 
-from risk_lib.data import get_factor_data
-from risk_lib.util import format_date
-from risk_lib.market_feedback import draw_market_feedback_scatter
-from risk_lib.config import HALFLIFES
-from dashboard.interface import add_sidebar_defaults, select_date_range
+from risk_data import get_factor_data
+from risk_util import format_date
+from risk_market_feedback import draw_market_feedback_scatter
+from risk_config import HALFLIFES
+from dashboard_interface import add_sidebar_defaults, select_date_range
 
 def build_dashboard(factor_data):
     # TODO: Add peak memory usage (before deleting factor_data)

@@ -1,11 +1,11 @@
 import streamlit as st
 
-from risk_lib.data import get_factor_data
-from dashboard.dashboard_feedback import build_dashboard as feedback
+from risk_data import get_factor_data
+from dashboard_feedback import build_dashboard as feedback
 # from timeseries import build_dashboard_vol as time_series
 # from corr_mds_dashboard import build_streamlit_dashboard as corr_mds
-from dashboard.dashboard_master import build_dashboard as master
-# from risk_lib.util import add_sidebar_defaults
+from dashboard_master import build_dashboard as master
+# from risk_util import add_sidebar_defaults
 
 factor_data = get_factor_data()
 

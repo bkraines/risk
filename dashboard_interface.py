@@ -3,9 +3,9 @@ from typing import Iterable, Optional
 import streamlit as st
 
 import os
-from risk_lib.data import get_factor_data
-from risk_lib.util import check_memory_usage, get_mtd_range, get_ytd_range, summarize_memory_usage, get_directory_last_updated_time
-from risk_lib.config import CACHE_TARGET, MARKET_EVENTS, TRAILING_WINDOWS, CACHE_DIR, CACHE_FILENAME
+from risk_data import get_factor_data
+from risk_util import check_memory_usage, get_mtd_range, get_ytd_range, summarize_memory_usage, get_directory_last_updated_time
+from risk_config import CACHE_TARGET, MARKET_EVENTS, TRAILING_WINDOWS, CACHE_DIR, CACHE_FILENAME
 
 
 def force_data_refresh():

@@ -2,10 +2,10 @@
 # TEST 10 - SMALLER DATASET
 
 import streamlit as st
-from risk_lib.util import format_date
-from risk_lib.data import build_factor_data
-from risk_lib.util import check_memory_usage
-from risk_lib.market_feedback import draw_market_feedback_scatter
+from risk_util import format_date
+from risk_data import build_factor_data
+from risk_util import check_memory_usage
+from risk_market_feedback import draw_market_feedback_scatter
 
 halflifes = [126] # [21, 63, 126, 252]
 
@@ -36,7 +36,7 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 # TEST 8 - MULTIPLE DROPDOWNS
 
 # import streamlit as st
-# from risk_lib.data import build_factor_data
+# from risk_data import build_factor_data
 # from market_feedback import draw_market_feedback_scatter
 
 # halflifes = [63, 252]
@@ -59,7 +59,7 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 # TEST 7 - SINGLE DROP DOWN
 
 # import streamlit as st
-# from risk_lib.data import build_factor_data
+# from risk_data import build_factor_data
 # from market_feedback import draw_market_feedback_scatter
 
 # halflifes = [63, 252]
@@ -85,7 +85,7 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 ## TEST 6 - USE FACTOR DATA
 
 # import streamlit as st
-# from risk_lib.data import build_factor_data
+# from risk_data import build_factor_data
 # from market_feedback import draw_market_feedback_scatter
 
 # halflifes = [63, 252]
@@ -107,7 +107,7 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 ## TEST 5 - USE FACTOR DATA
 
 # import streamlit as st
-# from risk_lib.data import build_factor_data
+# from risk_data import build_factor_data
 
 # halflifes = [63, 252]
 # ds = build_factor_data(halflifes)
@@ -121,7 +121,7 @@ st.write(f'Memory usage: {check_memory_usage()} MB')
 # import plotly.express as px
 # import pandas as pd
 # import yfinance as yf
-# from risk_lib.data import get_factor_master
+# from risk_data import get_factor_master
 
 # factor_master = get_factor_master()
 # factor_list = factor_master.index.values.tolist()

@@ -14,7 +14,7 @@ import plotly.io as pio
 import plotly.graph_objects as go
 # from plotly.graph_objs import Figure
 
-# from risk_lib.util import to_pandas_strict
+# from risk_util import to_pandas_strict
 
 def prepare_correlation(corr: xr.DataArray, transformation=None, start_date=None) -> pd.DataFrame:
     factor_master = pd.DataFrame(corr.asset.attrs).T

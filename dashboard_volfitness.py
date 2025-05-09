@@ -4,11 +4,11 @@ from typing import Any
 
 import xarray as xr
 
-from risk_lib.data import get_factor_data
-from risk_lib.chart import draw_zscore_qq
-from risk_lib.config import HALFLIFES
-from dashboard.interface import select_date_range
-from dashboard.interface import add_sidebar_defaults
+from risk_data import get_factor_data
+from risk_chart import draw_zscore_qq
+from risk_config import HALFLIFES
+from dashboard_interface import select_date_range
+from dashboard_interface import add_sidebar_defaults
 
 def build_dashboard(factor_data: xr.Dataset) -> None:
     factor_list = factor_data['factor_name'].values

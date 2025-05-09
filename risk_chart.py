@@ -13,8 +13,8 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-from risk_lib.config import IMAGE_DIR
-from risk_lib.stats import get_beta_pair, get_zscore
+from risk_config import IMAGE_DIR
+from risk_stats import get_beta_pair, get_zscore
 
 # TODO: Share chart dimensions and template by extracting `fig_format_default` dict from `px_line`
 # TODO: Pull ploty template into a constant

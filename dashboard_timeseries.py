@@ -1,11 +1,11 @@
 import streamlit as st
 
-from risk_lib.data import get_factor_data
-from risk_lib.stats import get_dist_ma_set, get_days_ma_set
-from risk_lib.chart import draw_volatility, draw_correlation, draw_cumulative_return, draw_volatility_ratio, draw_beta, draw_returns, draw_zscore, draw_distance_from_ma, draw_days_from_ma, draw_zscore_qq
-from risk_lib.config import HALFLIFES
-from dashboard.interface import select_date_range
-from dashboard.interface import add_sidebar_defaults
+from risk_data import get_factor_data
+from risk_stats import get_dist_ma_set, get_days_ma_set
+from risk_chart import draw_volatility, draw_correlation, draw_cumulative_return, draw_volatility_ratio, draw_beta, draw_returns, draw_zscore, draw_distance_from_ma, draw_days_from_ma, draw_zscore_qq
+from risk_config import HALFLIFES
+from dashboard_interface import select_date_range
+from dashboard_interface import add_sidebar_defaults
 
 def build_dashboard(factor_data):
     # TODO: Include time series of factor ratios

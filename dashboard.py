@@ -4,15 +4,15 @@
 
 import streamlit as st
 
-from risk_lib.data import get_factor_data
+from risk_data import get_factor_data
 
-from dashboard.dashboard_feedback   import build_dashboard as feedback
-from dashboard.dashboard_timeseries import build_dashboard as timeseries
-from dashboard.dashboard_mds        import build_dashboard as mds
-from dashboard.dashboard_master     import build_dashboard as master
-from dashboard.dashboard_monitor    import build_dashboard as monitor
-from dashboard.dashboard_volfitness import build_dashboard as volfitness
-# from risk_lib.util import add_sidebar_defaults
+from dashboard_feedback   import build_dashboard as feedback
+from dashboard_timeseries import build_dashboard as timeseries
+from dashboard_mds        import build_dashboard as mds
+from dashboard_master     import build_dashboard as master
+from dashboard_monitor    import build_dashboard as monitor
+from dashboard_volfitness import build_dashboard as volfitness
+# from risk_util import add_sidebar_defaults
 
 factor_data = get_factor_data()
 

@@ -13,7 +13,7 @@ import pandas as pd
 import xarray as xr
 import streamlit as st
 
-from risk_lib.config import CACHE_DIR, ARRAYLAKE_REPO
+from risk_config import CACHE_DIR, ARRAYLAKE_REPO
 # from config import CACHE_DIR, ARRAYLAKE_REPO
 # print("--- Loading risk_lib.util ---")
 

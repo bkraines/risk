@@ -2,9 +2,9 @@ from typing import Optional
 import streamlit as st
 import xarray as xr
 
-from risk_lib.data import get_factor_master, get_portfolios
-from dashboard.interface import add_sidebar_defaults
-from risk_lib.util import move_columns_to_front
+from risk_data import get_factor_master, get_portfolios
+from dashboard_interface import add_sidebar_defaults
+from risk_util import move_columns_to_front
 
 
 def add_hyperlinks():

@@ -1,8 +1,8 @@
 import streamlit as st
 
-from risk_lib.data import get_factor_data
-from risk_lib.corr_mds import run_mds
-from dashboard.interface import add_sidebar_defaults
+from risk_data import get_factor_data
+from risk_corr_mds import run_mds
+from dashboard_interface import add_sidebar_defaults
 
 def build_dashboard(factor_data):
     args = {'random_state': 42, 

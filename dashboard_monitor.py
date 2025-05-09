@@ -4,11 +4,11 @@ from numpy import sqrt
 import pandas as pd
 import xarray as xr
 
-from risk_lib.data import get_factor_data, get_factor_master
-from risk_lib.util import format_date
-# from risk_lib.market_feedback import draw_market_feedback_scatter
-from risk_lib.config import HALFLIFES
-from dashboard.interface import add_sidebar_defaults, select_date_range
+from risk_data import get_factor_data, get_factor_master
+from risk_util import format_date
+# from risk_market_feedback import draw_market_feedback_scatter
+from risk_config import HALFLIFES
+from dashboard_interface import add_sidebar_defaults, select_date_range
 
 TABLE_CONFIG = (pd.DataFrame(columns =  ["variable",   "name",               "format"],
                              data    = [["vol",        "Volatility (% ann)", "%.1f"],

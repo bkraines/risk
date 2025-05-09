@@ -7,9 +7,9 @@ xr.set_options(keep_attrs=True,
 
 import yfinance as yf
 
-from risk_lib.util import xr_pct_change, safe_reindex
-from risk_lib.data import get_factor_master, get_portfolios
-from risk_lib.stats import get_volatility_set, get_correlation_set
+from risk_util import xr_pct_change, safe_reindex
+from risk_data import get_factor_master, get_portfolios
+from risk_stats import get_volatility_set, get_correlation_set
 
 
 def fill_returns(df):
