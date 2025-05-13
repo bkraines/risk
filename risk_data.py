@@ -81,8 +81,10 @@ def get_factor_master(factor_data: Optional[xr.Dataset] = None, **kwargs) -> pd.
     return df
 
 def get_portfolios(file_name: str = FACTOR_FILENAME, file_dir = FACTOR_DIR, sheet_name: str = 'read_composites', index_col: str = 'portfolio_name') -> pd.DataFrame:
-    file_path = os.path.join(file_dir, file_name)
-    df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
+    # FIXME: I moved to a flat directory structure
+    # file_path = os.path.join(file_dir, file_name)
+    # df = pd.read_excel(file_path, sheet_name=sheet_name, index_col=index_col)
+    df = pd.read_excel(file_name, sheet_name=sheet_name, index_col=index_col)
     df.index = pd.CategoricalIndex(df.index, categories=df.index.unique(), ordered=True)
     return (df.reset_index()
             .pivot(index='factor_name', 
@@ -128,15 +130,15 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET) -> xr.Dataset
     ret_list = [ret_yf]
     
     factor_list_composite = factor_master.query('source==composite').index
-    if not factor_list_composite.empty:
-        portfolios_weights = (get_portfolios()
-                            #   .loc[factor_list_composite]
-                            .pipe(safe_reindex, factor_master)
-                            .fillna(0)
-                            .loc[factor_list_yf]
-                            )
-        portfolios_ret = ret_yf @ portfolios_weights
-        ret_list.append(portfolios_ret)
+    # if not factor_list_composite.empty:
+    portfolios_weights = (get_portfolios()
+                        #   .loc[factor_list_composite]
+                        .pipe(safe_reindex, factor_master)
+                        .fillna(0)
+                        .loc[factor_list_yf]
+                        )
+    portfolios_ret = ret_yf @ portfolios_weights
+    ret_list.append(portfolios_ret)
     
     levels_latest = levels_yf.iloc[-1]
 
