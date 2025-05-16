@@ -77,14 +77,14 @@ def select_date_range(
     #     st.error("date_list must contain at least one date.")
     #     return None, None
 
-    default_start = date_list[0]
-    latest_date = date_list[-1]
-
     def get_start_date_n_periods_ago(n: int) -> datetime:
         idx = max(0, len(date_list) - (n + 1))
         return date_list[idx]
 
-    static_ranges = {"max":   (default_start, latest_date),
+    earliest_date = min(date_list)
+    latest_date   = max(date_list)
+
+    static_ranges = {"max":   (earliest_date, latest_date),
                      "custom": None,}
 
     trailing_ranges = {label: (get_start_date_n_periods_ago(n), latest_date)
@@ -93,30 +93,56 @@ def select_date_range(
     to_date_ranges = {'MTD': get_mtd_range(latest_date),
                       'YTD': get_ytd_range(latest_date)}
 
-    # to_date_windows = {"MTD": get_mtd_range,
-    #                    "YTD": get_ytd_range}
-
-    # to_date_ranges = {label: func(latest_date)
-    #                   for label, func in to_date_windows.items()}
-
     all_date_options = static_ranges | to_date_ranges | trailing_ranges  | market_events
     options = list(all_date_options.keys())
 
-    if default_option and (default_option in options):
-        initial_selection = default_option
-    elif "max" in options:
-        initial_selection = "max"
-    else:
-        initial_selection = options[0]
+    def initialize_selectbox():
+        if default_option and (default_option in options):
+            initial_selection = default_option
+        elif "max" in options:
+            initial_selection = "max"
+        else:
+            initial_selection = options[0]
+        return initial_selection    
+
+    def initialize_custom_dates(initial_selection):
+        # Gemini generated
+        if 'custom_start_date' in st.session_state and 'custom_end_date' in st.session_state:
+            return  # Session state already initialized
+
+        if all_date_options[initial_selection] is not None:
+            _initial_session_start, _initial_session_end = all_date_options[initial_selection]
+        elif all_date_options["max"] is not None:  # Fallback to "max" if initial_selection was "custom"
+            _initial_session_start, _initial_session_end = all_date_options["max"]
+        else:  # Ultimate fallback
+            _initial_session_start, _initial_session_end = earliest_date, latest_date
+
+        st.session_state.custom_start_date = _initial_session_start
+        st.session_state.custom_end_date = _initial_session_end
+
+    initial_selection = initialize_selectbox()
+    initialize_custom_dates(initial_selection)
 
     selected_range = st.selectbox("Date Range", options, index=options.index(initial_selection))
 
     if selected_range != "custom":
         start_date, end_date = all_date_options[selected_range]
-        st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}") # TODO: 
+        # st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}") # TODO: 
+        # default_start, default_end = start_date, end_date # Reset default dates for `custom` range
+        st.session_state.custom_start_date = start_date
+        st.session_state.custom_end_date = end_date
     else:
-        start_date = st.date_input("Start date", default_start, min_value=default_start, max_value=latest_date)
-        end_date = st.date_input("End date", latest_date, min_value=default_start, max_value=latest_date)
+        # start_date = st.date_input("Start date", default_start, min_value=earliest_date, max_value=latest_date)
+        # end_date = st.date_input("End date", default_end, min_value=earliest_date, max_value=latest_date)
+        start_date = st.date_input("Start date", 
+                                   value=st.session_state.custom_start_date, 
+                                   min_value=earliest_date, 
+                                   max_value=latest_date)
+        end_date = st.date_input("End date", 
+                                 value=st.session_state.custom_end_date, 
+                                 min_value=start_date if start_date else earliest_date, 
+                                 max_value=latest_date)
+
 
         if not isinstance(start_date, date):
             raise ValueError(f"Expected a single date, but got {start_date} of type {type(start_date)}")
@@ -128,7 +154,11 @@ def select_date_range(
 
         if start_date > end_date:
             st.error("Start date must be before end date.")
-        st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")
+        else:
+            st.session_state.custom_start_date = start_date
+            st.session_state.custom_end_date = end_date
+        # st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")
+    st.caption(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")
 
     # TODO: Ensure start_date and end_date are of comparable types then print output in one place:
     # if start_date > end_date:
