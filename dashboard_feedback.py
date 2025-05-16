@@ -1,7 +1,7 @@
 import streamlit as st
 
 from risk_data import get_factor_data
-from risk_util import format_date
+from risk_dates import format_date
 from risk_market_feedback import draw_market_feedback_scatter
 from risk_config import HALFLIFES
 from dashboard_interface import add_sidebar_defaults, select_date_range

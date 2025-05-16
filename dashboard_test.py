@@ -2,7 +2,7 @@
 # TEST 10 - SMALLER DATASET
 
 import streamlit as st
-from risk_util import format_date
+from risk_dates import format_date
 from risk_data import build_factor_data
 from risk_util import check_memory_usage
 from risk_market_feedback import draw_market_feedback_scatter

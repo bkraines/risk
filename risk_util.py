@@ -1,11 +1,9 @@
-from datetime import date
-from typing import Callable, Any, List, Literal, Optional, Union
+from typing import Callable, Any, List, Literal, Optional
 
 import os 
 from pathlib import Path
 import datetime
 
-from pandas.tseries.offsets import BDay
 import psutil
 import pickle
 
@@ -339,146 +337,6 @@ def move_columns_to_front(df: pd.DataFrame, column_names: list[str]) -> pd.DataF
     return df[column_names + remaining_cols]
 
 
-# def find_prior_month_end(dates: list[pd.Timestamp], current_date: Optional[pd.Timestamp]) -> pd.Timestamp:
-#     dates = sorted(pd.to_datetime(dates))
-#     if current_date is None:
-#         current_date = dates[-1]
-#     # current_date = pd.to_datetime(current_date)
-#     prior_month_dates = dates[dates < current_date.replace(day=1)]
-#     if not prior_month_dates.empty:
-#         return prior_month_dates.max()
-#     else:
-#         return dates.min()  # First date in the sorted list
-
-
-def get_mtd_range(today: Optional[date] = None) -> tuple[date, date]:
-    """
-    Return the month-to-date range from the first of the current month to today.
-
-    Parameters
-    ----------
-    today : date, optional
-        The reference date. Defaults to today's date.
-
-    Returns
-    -------
-    tuple of date
-        (start_date, end_date)
-    """
-    # TODO: Return the last date of the prior month from a list
-    today = today or date.today()
-    start = date(today.year, today.month, 1)
-    return start, today
-
-
-def get_ytd_range(today: Optional[date] = None) -> tuple[date, date]:
-    """
-    Return the year-to-date range from Jan 1 to today.
-
-    Parameters
-    ----------
-    today : date, optional
-        The reference date. Defaults to today's date.
-
-    Returns
-    -------
-    tuple of date
-        (start_date, end_date)
-    """
-    today = today or date.today()
-    start = date(today.year, 1, 1)
-    return start, today
-
-
-# def select_date_range_bad(
-#     date_list: Iterable[date],
-#     trailing_windows: Optional[dict[str, int]] = None,
-#     named_ranges: Optional[dict[str, tuple[date, date]]] = None
-# ) -> tuple[date, date]:
-#     """
-#     Display a date range selector using Streamlit widgets.
-
-#     Parameters
-#     ----------
-#     date_list : iterable of date
-#         Available dates to select from.
-#     trailing_windows : dict of str to int, optional
-#         Mapping from label to number of days before the end date. Defaults to TRAILING_WINDOWS.
-#     named_ranges : dict of str to tuple(date, date), optional
-#         Mapping from label to explicit date ranges. Defaults to MARKET_EVENTS.
-
-#     Returns
-#     -------
-#     tuple of date
-#         The selected start and end dates.
-#     """
-#     if trailing_windows is None:
-#             traling_windows = TRAILING_WINDOWS
-#     if named_ranges is None:
-#             named_ranges = MARKET_EVENTS
-
-#     today = date_list[-1]
-
-#     def get_trailing_date(n: int) -> date:
-#         index = max(0, len(date_list) - n - 1)
-#         return date_list[index]
-
-#     trailing_options = {
-#         label: (get_trailing_date(n), today)
-#         for label, n in trailing_windows.items()
-#     }
-
-#     to_date_windows = {
-#         # TODO: Replace with get_prior_month_end(date_list), get_prior_year_end(date_list)
-#         "MTD": get_mtd_range(today),
-#         "YTD": get_ytd_range(today),
-#     }
-
-#     static_options = {"max": (date_list[0], today), "custom": (None, None)}
-
-#     all_date_options = {
-#         **static_options,
-#         **to_date_windows,
-#         **trailing_options,
-#         **named_ranges,
-#     }
-
-#     default_option = "max" if "max" in all_date_options else list(all_date_options.keys())[0]
-#     label = st.selectbox("Date Range", options=list(all_date_options.keys()), index=list(all_date_options.keys()).index(default_option))
-
-#     start_date, end_date = all_date_options[label]
-
-#     if label == "custom":
-#         start_date = st.date_input("Start date", value=today, max_value=today)
-#         end_date = st.date_input("End date", value=today, min_value=start_date, max_value=today)
-
-#         if start_date > end_date:
-#             st.error("Start date must be before end date.")
-
-#     st.caption(f"{start_date} → {end_date}")
-#     return start_date, end_date
-
-
-def format_date(date_str):
-    return pd.to_datetime(date_str).strftime(r'%m/%d')
-
-
-def business_days_ago(n=1, current_date=None):
-    if current_date is None:
-        current_date = pd.Timestamp.today()
-    return (pd.Timestamp.today() - BDay(n)).date()
-
-
-# def current_business_day(current_date=None):
-#     if current_date is None:
-#         current_date = pd.Timestamp.today()
-#     return (pd.Timestamp.today().date() + BDay(1) - BDay(1)).date()
-
-def latest_business_day(date=None):
-    if date is None:
-        date = pd.Timestamp.today()
-    return (date + BDay(1) - BDay(1)).date()
-
 # print("--- Defining ttt ---")
 # def ttt():
 #     pass
@@ -509,3 +367,8 @@ def get_directory_last_updated_time(path: str | Path) -> datetime.datetime:
     )
 
     return datetime.datetime.fromtimestamp(latest_mtime)
+
+
+def is_sorted(date_list):
+    # TODO: Find better solution than using `is_sorted` everywhere
+    return all(date_list[i] <= date_list[i+1] for i in range(len(date_list)-1))

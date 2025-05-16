@@ -23,7 +23,7 @@ COV_TYPES = {str(h): {'vol_type': h,
              for h in HALFLIFES}
 
 # Trailing windows
-TRAILING_WINDOWS: dict[str, int] = {
+ROLLING_WINDOWS: dict[str, int] = {
     "1d": 1,
     "5d": 5,
     "1m": 21,

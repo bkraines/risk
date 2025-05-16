@@ -4,8 +4,9 @@ import streamlit as st
 
 import os
 from risk_data import get_factor_data
-from risk_util import check_memory_usage, get_mtd_range, get_ytd_range, summarize_memory_usage, get_directory_last_updated_time
-from risk_config import CACHE_TARGET, MARKET_EVENTS, TRAILING_WINDOWS, CACHE_DIR, CACHE_FILENAME
+from risk_dates import build_date_options
+from risk_util import check_memory_usage, summarize_memory_usage, get_directory_last_updated_time
+from risk_config import CACHE_TARGET, MARKET_EVENTS, ROLLING_WINDOWS, CACHE_DIR, CACHE_FILENAME
 
 
 def force_data_refresh():
@@ -35,9 +36,8 @@ if __name__ == "__main__":
 
 def select_date_range(
     date_list: Iterable[datetime],
-    trailing_windows: Optional[dict[str, int]] = TRAILING_WINDOWS,
+    rolling_windows: Optional[dict[str, int]] = ROLLING_WINDOWS,
     market_events: Optional[dict[str, tuple[datetime, datetime]]] = MARKET_EVENTS,
-    # to_date_windows: Optional[dict[str, Callable[[datetime], tuple[datetime, datetime]]]] = TO_DATE_WINDOWS,
     default_option: Optional[str] = None,
 ) -> tuple[date, date]:
     """
@@ -63,46 +63,18 @@ def select_date_range(
     """
     # TODO: Pass in a list of to_date_windows that we want to include 
     #       then from the dictionary from a An str-> Callable mapping.
-    # TODO: Rename trailing_windows[ranges] to rolling_windows[ranges]
-    #       and to_date_windows[ranges] to expanding[ranges]
-    if trailing_windows is None:
-        trailing_windows = {}
-    if market_events is None:
-        market_events = {}
+    # TODO: Break out Market Events into separate dropdown? 
+    #       Use an `optgroup` to separate the event types?
+    # TODO: Allow custom rolling windows?
 
-    date_list = sorted(date_list)
-    if not date_list:
-        raise ValueError(f"List of dates must be nonempty")
-    # if not date_list:
-    #     st.error("date_list must contain at least one date.")
-    #     return None, None
 
-    def get_start_date_n_periods_ago(n: int) -> datetime:
-        idx = max(0, len(date_list) - (n + 1))
-        return date_list[idx]
-
-    earliest_date = min(date_list)
-    latest_date   = max(date_list)
-
-    static_ranges = {"max":   (earliest_date, latest_date),
-                     "custom": None,}
-
-    trailing_ranges = {label: (get_start_date_n_periods_ago(n), latest_date)
-                       for label, n in trailing_windows.items()}
-
-    to_date_ranges = {'MTD': get_mtd_range(latest_date),
-                      'YTD': get_ytd_range(latest_date)}
-
-    all_date_options = static_ranges | to_date_ranges | trailing_ranges  | market_events
-    options = list(all_date_options.keys())
-
-    def initialize_selectbox():
-        if default_option and (default_option in options):
+    def clean_default_option(default_option, date_options_names):
+        if default_option and (default_option in date_options_names):
             initial_selection = default_option
-        elif "max" in options:
+        elif "max" in date_options_names:
             initial_selection = "max"
         else:
-            initial_selection = options[0]
+            initial_selection = date_options_names[0]
         return initial_selection    
 
     def initialize_custom_dates(initial_selection):
@@ -110,63 +82,55 @@ def select_date_range(
         if 'custom_start_date' in st.session_state and 'custom_end_date' in st.session_state:
             return  # Session state already initialized
 
-        if all_date_options[initial_selection] is not None:
-            _initial_session_start, _initial_session_end = all_date_options[initial_selection]
-        elif all_date_options["max"] is not None:  # Fallback to "max" if initial_selection was "custom"
-            _initial_session_start, _initial_session_end = all_date_options["max"]
+        if date_options_dict[initial_selection] is not None:
+            _initial_session_start, _initial_session_end = date_options_dict[initial_selection]
+        elif date_options_dict["max"] is not None:  # Fallback to "max" if initial_selection was "custom"
+            _initial_session_start, _initial_session_end = date_options_dict["max"]
         else:  # Ultimate fallback
             _initial_session_start, _initial_session_end = earliest_date, latest_date
 
         st.session_state.custom_start_date = _initial_session_start
         st.session_state.custom_end_date = _initial_session_end
 
-    initial_selection = initialize_selectbox()
-    initialize_custom_dates(initial_selection)
 
-    selected_range = st.selectbox("Date Range", options, index=options.index(initial_selection))
+    # if not date_list:
+    #     raise ValueError(f"List of dates must be nonempty")
+    date_list = sorted(date_list)
+    earliest_date = min(date_list)
+    latest_date   = max(date_list)
+
+    date_options_dict = build_date_options(date_list, rolling_windows, market_events)
+    date_options_names = list(date_options_dict.keys())
+    default_option = clean_default_option(default_option, date_options_names)
+    initialize_custom_dates(default_option)
+
+    selected_range = st.selectbox("Date Range", date_options_names, index=date_options_names.index(default_option))
 
     if selected_range != "custom":
-        start_date, end_date = all_date_options[selected_range]
-        # st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}") # TODO: 
-        # default_start, default_end = start_date, end_date # Reset default dates for `custom` range
+        start_date, end_date = date_options_dict[selected_range]
         st.session_state.custom_start_date = start_date
         st.session_state.custom_end_date = end_date
     else:
-        # start_date = st.date_input("Start date", default_start, min_value=earliest_date, max_value=latest_date)
-        # end_date = st.date_input("End date", default_end, min_value=earliest_date, max_value=latest_date)
+        # Custom date range, careful that st.date_input might return a tuple or None
         start_date = st.date_input("Start date", 
                                    value=st.session_state.custom_start_date, 
                                    min_value=earliest_date, 
                                    max_value=latest_date)
-        end_date = st.date_input("End date", 
-                                 value=st.session_state.custom_end_date, 
-                                 min_value=start_date if start_date else earliest_date, 
-                                 max_value=latest_date)
-
-
+        end_date   = st.date_input("End date", 
+                                   value=st.session_state.custom_end_date, 
+                                   min_value=start_date if start_date else earliest_date, 
+                                   max_value=latest_date)
         if not isinstance(start_date, date):
             raise ValueError(f"Expected a single date, but got {start_date} of type {type(start_date)}")
         if not isinstance(end_date, date):
             raise ValueError(f"Expected a single date, but got {end_date} of type {type(end_date)}")
-
-        # start_date = start_date[0] if isinstance(start_date, tuple) else start_date
-        # end_date = end_date[0] if isinstance(end_date, tuple) else end_date
-
         if start_date > end_date:
             st.error("Start date must be before end date.")
         else:
             st.session_state.custom_start_date = start_date
             st.session_state.custom_end_date = end_date
-        # st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")
+
     st.caption(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")
 
-    # TODO: Ensure start_date and end_date are of comparable types then print output in one place:
-    # if start_date > end_date:
-    #     st.error("Start date must be before end date.")     
-    # else:
-    #     st.write(f"{start_date.strftime(r'%Y-%m-%d')} to {end_date.strftime(r'%Y-%m-%d')}")        
-
-
-    # TODO: Break out Market Events into separate dropdown? Use an `optgroup` to separate the event types?
-    # TODO: Allow custom trailing windows?
     return start_date, end_date
+
