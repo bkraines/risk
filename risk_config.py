@@ -22,7 +22,6 @@ COV_TYPES = {str(h): {'vol_type': h,
                       'corr_type': h}
              for h in HALFLIFES}
 
-# Trailing windows
 ROLLING_WINDOWS: dict[str, int] = {
     "1d": 1,
     "5d": 5,
@@ -35,8 +34,7 @@ ROLLING_WINDOWS: dict[str, int] = {
     "10y": 252 * 10,
 }
 
-# Named historical event ranges
-MARKET_EVENTS: dict[str, tuple[datetime, datetime]] = {
+HISTORICAL_WINDOWS: dict[str, tuple[datetime, datetime]] = {
     "Trade War Selloff (2025)":  (datetime(2025,  3, 31), datetime(2025, 4, 21)),
     "Trade War Rally (2025)":    (datetime(2025,  4, 21), datetime(2025, 5, 16)),
     

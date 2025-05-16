@@ -4,9 +4,9 @@ import streamlit as st
 
 import os
 from risk_data import get_factor_data
-from risk_dates import build_date_options
+from risk_dates import build_window_map
 from risk_util import check_memory_usage, summarize_memory_usage, get_directory_last_updated_time
-from risk_config import CACHE_TARGET, MARKET_EVENTS, ROLLING_WINDOWS, CACHE_DIR, CACHE_FILENAME
+from risk_config import CACHE_TARGET, HISTORICAL_WINDOWS, ROLLING_WINDOWS, CACHE_DIR, CACHE_FILENAME
 
 
 def force_data_refresh():
@@ -34,11 +34,11 @@ if __name__ == "__main__":
     add_sidebar_defaults()
 
 
-def select_date_range(
+def select_date_window(
     date_list: Iterable[datetime],
     rolling_windows: Optional[dict[str, int]] = ROLLING_WINDOWS,
-    market_events: Optional[dict[str, tuple[datetime, datetime]]] = MARKET_EVENTS,
-    default_option: Optional[str] = None,
+    historical_windows: Optional[dict[str, tuple[datetime, datetime]]] = HISTORICAL_WINDOWS,
+    default_window_name: Optional[str] = None,
 ) -> tuple[date, date]:
     """
     Display a Streamlit UI to select a date range from trailing windows, named ranges, to-date periods, or a custom picker.
@@ -82,10 +82,10 @@ def select_date_range(
         if 'custom_start_date' in st.session_state and 'custom_end_date' in st.session_state:
             return  # Session state already initialized
 
-        if date_options_dict[initial_selection] is not None:
-            _initial_session_start, _initial_session_end = date_options_dict[initial_selection]
-        elif date_options_dict["max"] is not None:  # Fallback to "max" if initial_selection was "custom"
-            _initial_session_start, _initial_session_end = date_options_dict["max"]
+        if window_map[initial_selection] is not None:
+            _initial_session_start, _initial_session_end = window_map[initial_selection]
+        elif window_map["max"] is not None:  # Fallback to "max" if initial_selection was "custom"
+            _initial_session_start, _initial_session_end = window_map["max"]
         else:  # Ultimate fallback
             _initial_session_start, _initial_session_end = earliest_date, latest_date
 
@@ -99,15 +99,15 @@ def select_date_range(
     earliest_date = min(date_list)
     latest_date   = max(date_list)
 
-    date_options_dict = build_date_options(date_list, rolling_windows, market_events)
-    date_options_names = list(date_options_dict.keys())
-    default_option = clean_default_option(default_option, date_options_names)
-    initialize_custom_dates(default_option)
+    window_map = build_window_map(date_list, rolling_windows, historical_windows)
+    window_names = list(window_map.keys())
+    default_window_name = clean_default_option(default_window_name, window_names)
+    initialize_custom_dates(default_window_name)
 
-    selected_range = st.selectbox("Date Range", date_options_names, index=date_options_names.index(default_option))
+    selected_range = st.selectbox("Date Range", window_names, index=window_names.index(default_window_name))
 
     if selected_range != "custom":
-        start_date, end_date = date_options_dict[selected_range]
+        start_date, end_date = window_map[selected_range]
         st.session_state.custom_start_date = start_date
         st.session_state.custom_end_date = end_date
     else:

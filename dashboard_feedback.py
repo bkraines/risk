@@ -4,7 +4,7 @@ from risk_data import get_factor_data
 from risk_dates import format_date
 from risk_market_feedback import draw_market_feedback_scatter
 from risk_config import HALFLIFES
-from dashboard_interface import add_sidebar_defaults, select_date_range
+from dashboard_interface import add_sidebar_defaults, select_date_window
 
 def build_dashboard(factor_data):
     # TODO: Add peak memory usage (before deleting factor_data)
@@ -16,7 +16,7 @@ def build_dashboard(factor_data):
 
     with st.sidebar:
         corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)
-        return_start, return_end = select_date_range(factor_data.indexes['date'], default_option='MTD')
+        return_start, return_end = select_date_window(factor_data.indexes['date'], default_window_name='MTD')
         vol_type     = st.selectbox('Volatility Halflife', options=model_options, index=model_default)
         corr_type    = st.selectbox('Correlation Halflife', options=model_options, index=model_default)
 

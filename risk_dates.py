@@ -72,15 +72,17 @@ def get_ytd_range(today: Optional[date] = None) -> tuple[date, date]:
     return start, today
 
 
-def build_date_options(date_list: Sequence[datetime],
+def build_window_map(date_list: Sequence[datetime],
                        rolling_windows: Optional[dict[str, int]],
-                       market_events: Optional[dict[str, tuple[datetime, datetime]]]):
+                       historical_windows: Optional[dict[str, tuple[datetime, datetime]]]):
+    # TODO: Check that all start and end dates are in date_list
+    #       Could be a problem with predefined historical ranges
     
     assert is_sorted(date_list)
     if rolling_windows is None:
         rolling_windows = {}
-    if market_events is None:
-        market_events = {}
+    if historical_windows is None:
+        historical_windows = {}
 
     earliest_date = min(date_list)
     latest_date = max(date_list)
@@ -94,5 +96,5 @@ def build_date_options(date_list: Sequence[datetime],
     expanding_ranges = {'MTD': get_mtd_range(latest_date),
                         'YTD': get_ytd_range(latest_date)}
 
-    date_options_dict = static_ranges | expanding_ranges | rolling_ranges  | market_events
+    date_options_dict = static_ranges | expanding_ranges | rolling_ranges  | historical_windows
     return date_options_dict

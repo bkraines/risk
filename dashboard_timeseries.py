@@ -4,7 +4,7 @@ from risk_data import get_factor_data
 from risk_stats import get_dist_ma_set, get_days_ma_set
 from risk_chart import draw_volatility, draw_correlation, draw_cumulative_return, draw_volatility_ratio, draw_beta, draw_returns, draw_zscore, draw_distance_from_ma, draw_days_from_ma, draw_zscore_qq
 from risk_config import HALFLIFES
-from dashboard_interface import select_date_range
+from dashboard_interface import select_date_window
 from dashboard_interface import add_sidebar_defaults
 
 def build_dashboard(factor_data):
@@ -14,7 +14,7 @@ def build_dashboard(factor_data):
     with st.sidebar:
         factor_1 = st.selectbox('Factor 1', options=factor_list, index=0)
         factor_2 = st.selectbox('Factor 2', options=factor_list, index=1)
-        start_date, end_date = select_date_range(factor_data.indexes['date'], default_option='1y')
+        start_date, end_date = select_date_window(factor_data.indexes['date'], default_window_name='1y')
         vol_type = st.selectbox('Volatility Halflife for Z-Score', options=HALFLIFES, index=0)
         ma_type: int = st.number_input("Moving Average Window", value=200, min_value=1, step=1, format="%d")
     
