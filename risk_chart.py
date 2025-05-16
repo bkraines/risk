@@ -44,7 +44,13 @@ def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotat
         fig.update_yaxes(title_text=None)
     if not annotations:
         fig.for_each_annotation(lambda a: a.update(text=''))
-        
+
+    fig.update_traces(hovertemplate=None)
+    fig.update_layout( #legend_title_text=None,
+                    #   hovermode='x unified',
+                      hovermode='x unified',
+                      )
+
     return fig
 
 
@@ -122,7 +128,7 @@ def px_bar(da: xr.DataArray, title: Optional[str] = None) -> Figure:
                   title=title,
                   template='plotly_white')
             .update_traces(marker_line_width=0,
-                           hovertemplate=None)
+                           hovertemplate=r'%{y:.2f}')
             .update_layout(xaxis_title=None,
                            yaxis_title=None,
                            legend_title_text=None,

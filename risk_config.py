@@ -37,7 +37,9 @@ TRAILING_WINDOWS: dict[str, int] = {
 
 # Named historical event ranges
 MARKET_EVENTS: dict[str, tuple[datetime, datetime]] = {
-    "Trade Wars (2025)":    (datetime(2025,  3, 31), datetime(2025, 4, 21)),
+    "Trade War Selloff (2025)":  (datetime(2025,  3, 31), datetime(2025, 4, 21)),
+    "Trade War Rally (2025)":    (datetime(2025,  4, 21), datetime(2025, 5, 16)),
+    
     "GFC (2008)":           (datetime(2007, 10,  1), datetime(2009, 3,  9)),
     "Eurozone Crisis":      (datetime(2011,  7,  1), datetime(2012, 9,  1)),
     "Taper Tantrum (2013)": (datetime(2013,  5,  1), datetime(2013, 9,  1)),
