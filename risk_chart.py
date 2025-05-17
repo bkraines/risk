@@ -1,5 +1,5 @@
 from typing import Union, Optional, Any
-from plotly.graph_objs import Figure
+from plotly.graph_objects import Figure
 
 import os
 
@@ -37,7 +37,7 @@ def px_write(fig, filename, directory=IMAGE_DIR):
         fig.write_image(file_path)
 
 
-def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotations: bool = False) -> Figure:
+def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotations: bool = False, hovermode: str = 'x unified') -> Figure:
     if not x_title:
         fig.update_xaxes(title_text=None)
     if not y_title:
@@ -47,7 +47,6 @@ def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotat
 
     fig.update_traces(hovertemplate=None)
     fig.update_layout( #legend_title_text=None,
-                    #   hovermode='x unified',
                       hovermode='x unified',
                       )
 
@@ -84,7 +83,7 @@ def px_scatter(df, x, y, color_map_override=None, **kwargs):
         `text`, `color`, `size`, and `symbol`, which contain column names for those attributes.
     Returns
     -------
-    plotly.graph_objs._figure.Figure
+    plotly.graph_objects._figure.Figure
         The generated scatter plot figure.
     Notes
     -----
@@ -499,5 +498,45 @@ def draw_zscore_qq(ret: xr.DataArray, vol: xr.DataArray, factor_vol_pairs: list[
     fig = plot_qq(df, title="QQ Plot")
     return fig
 
+
 def draw_zscore_qq_single(ret: xr.DataArray, vol: xr.DataArray, factor_name: str, vol_type: Any) -> Figure:
     return draw_zscore_qq(ret, vol, [(factor_name, vol_type)])
+
+
+def px_heatmap(da: xr.DataArray, x: str, y: str, color_scale: Optional[str] = 'RdBu_r', title: Union[str, None] = None, 
+               x_title: bool = False, y_title: bool = False, show_colorbar: bool = False, fig_format: Union[dict, None] = None) -> Figure:
+
+
+    # For fig.imshow, orient DataArray values as (y, x), e.g (rows, columns):
+    if da.dims != (y, x):
+        da = da.transpose(y, x)
+
+    fig = px.imshow(da,
+                    x=da[x],
+                    y=da[y],
+                    color_continuous_scale=color_scale,
+                    aspect="auto",
+                    origin="lower",
+                    # labels=dict(x="Date", y="Factor", color="Correlation")
+                    )
+
+    fig.update_layout(coloraxis_showscale=show_colorbar,
+                      yaxis_autorange="reversed",
+                      yaxis_side="right",
+                      title=title,
+                      xaxis_title=None,
+                      yaxis_title=None,
+                      )
+    
+    return fig
+
+
+def draw_correlation_heatmap(corr: xr.DataArray, fixed_factor: str, corr_type, height: int = 1200, title: str | None = None) -> Figure:
+    # TODO: Resample data weekly or monthly to control which pixels are selected in chart
+    if title is None:
+        title = f"Correlation with {fixed_factor} ({corr_type}-day halflife)"
+    da = corr.sel(factor_name=fixed_factor, corr_type=corr_type)
+    fig = (px_heatmap(da, x='date', y='factor_name_1', title=title)
+           .update_layout(height=height))
+    return fig
+
