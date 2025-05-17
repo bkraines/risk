@@ -6,7 +6,7 @@ import os
 from risk_data import get_factor_data
 from risk_dates import build_window_map
 from risk_util import check_memory_usage, summarize_memory_usage, get_directory_last_updated_time
-from risk_config import CACHE_TARGET, HISTORICAL_WINDOWS, ROLLING_WINDOWS, CACHE_DIR, CACHE_FILENAME
+from risk_config import CACHE_TARGET, CACHE_DIR, CACHE_FILENAME, HISTORICAL_WINDOWS, ROLLING_WINDOWS
 
 
 def force_data_refresh():
@@ -92,7 +92,7 @@ def select_date_window(
         st.session_state.custom_start_date = _initial_session_start
         st.session_state.custom_end_date = _initial_session_end
 
-
+    # TODO: Find better way to guarantee date_list is sorted and not null
     # if not date_list:
     #     raise ValueError(f"List of dates must be nonempty")
     date_list = sorted(date_list)
@@ -106,12 +106,13 @@ def select_date_window(
 
     selected_range = st.selectbox("Date Range", window_names, index=window_names.index(default_window_name))
 
+    # TODO: Instead ensure that window doesn't map to None?
     if selected_range != "custom":
         start_date, end_date = window_map[selected_range]
         st.session_state.custom_start_date = start_date
         st.session_state.custom_end_date = end_date
     else:
-        # Custom date range, careful that st.date_input might return a tuple or None
+        # Select custom date range
         start_date = st.date_input("Start date", 
                                    value=st.session_state.custom_start_date, 
                                    min_value=earliest_date, 
@@ -120,6 +121,8 @@ def select_date_window(
                                    value=st.session_state.custom_end_date, 
                                    min_value=start_date if start_date else earliest_date, 
                                    max_value=latest_date)
+        # Be careful that st.date_input might return a tuple or None
+        # TODO: Find better way to ensure this
         if not isinstance(start_date, date):
             raise ValueError(f"Expected a single date, but got {start_date} of type {type(start_date)}")
         if not isinstance(end_date, date):

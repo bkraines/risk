@@ -12,7 +12,7 @@ import plotly.express as px
 import plotly.io as pio
 # pio.renderers.default='png'
 import plotly.graph_objects as go
-# from plotly.graph_objs import Figure
+# from plotly.graph_objects import Figure
 
 # from risk_util import to_pandas_strict
 
@@ -161,12 +161,12 @@ def draw_mds_ts(df: pd.DataFrame, tick_range: Union[None, float, Literal['auto']
         If None, the range is not set. Default is 'auto'.
     Returns
     -------
-    plotly.graph_objs._figure.Figure
+    plotly.graph_objects._figure.Figure
         A Plotly Figure object representing a scatter plot of the MDS time series data, animated with a range slider if `date` is present.
     Examples
     --------
     >>> import pandas as pd
-    >>> from plotly.graph_objs import Figure
+    >>> from plotly.graph_objects import Figure
     >>> data = {
     ...     'dim1': [0.1, 0.2, 0.3],
     ...     'dim2': [0.4, 0.5, 0.6],

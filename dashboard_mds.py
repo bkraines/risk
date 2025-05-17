@@ -12,9 +12,9 @@ def build_dashboard(factor_data):
         earliest_date = factor_data.indexes['date'].min().date()
         latest_date = factor_data.indexes['date'].max().date()
         end_date = st.date_input("End date", latest_date, earliest_date, latest_date)
-        animate = st.checkbox('Animate', value=False)
-        composites = st.checkbox('Composites', value=True)
-        trump = st.checkbox('Trump', value=True)
+        animate = st.toggle('Animate', value=False)
+        composites = st.toggle('Composites', value=True)
+        trump = st.toggle('Trump', value=True)
     
     if animate:
         ds = (factor_data

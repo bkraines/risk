@@ -38,6 +38,19 @@ def build_dashboard(factor_data):
             'qqplot':    draw_zscore_qq(ds.ret, ds.vol, [(factor_1, vol_type), (factor_2, vol_type)]),
             }
 
+    # fig_name = {'cret':      'Cumulative Return',
+    #             'ret':       'Daily Return',
+    #             'zscore':    'Z-Score',
+    #             'dist_ma':   'Distance from MA',
+    #             'days_ma':   'Days from MA',
+    #             'corr':      'Correlation',
+    #             'beta':      'Beta',
+    #             'vol_1':     f'Volatility {factor_1}',
+    #             'vol_2':     f'Volatility {factor_2}',
+    #             'vol_ratio': f'Volatility Ratio {factor_1} / {factor_2}',
+    #             'qqplot':    f'QQ Plot {factor_1} / {factor_2}'}
+  
+
     for fig in figs.values():
         st.plotly_chart(fig)
 

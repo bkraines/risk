@@ -73,12 +73,11 @@ def get_ytd_range(today: Optional[date] = None) -> tuple[date, date]:
 
 
 def build_window_map(date_list: Sequence[datetime],
-                       rolling_windows: Optional[dict[str, int]],
-                       historical_windows: Optional[dict[str, tuple[datetime, datetime]]]):
+                     rolling_windows: Optional[dict[str, int]],
+                     historical_windows: Optional[dict[str, tuple[datetime, datetime]]]):
     # TODO: Check that all start and end dates are in date_list
     #       Could be a problem with predefined historical ranges
     
-    assert is_sorted(date_list)
     if rolling_windows is None:
         rolling_windows = {}
     if historical_windows is None:
@@ -88,7 +87,7 @@ def build_window_map(date_list: Sequence[datetime],
     latest_date = max(date_list)
 
     static_ranges = {"max": (earliest_date, latest_date),
-                     "custom": None,}
+                     "custom": None}
 
     rolling_ranges = {label: (get_start_date_n_periods_ago(date_list, n), latest_date)
                         for label, n in rolling_windows.items()}
