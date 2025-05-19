@@ -32,6 +32,7 @@ ROLLING_WINDOWS: dict[str, int] = {
     "3y": 252 * 3,
     "5y": 252 * 5,
     "10y": 252 * 10,
+    "15y": 252 * 15,
 }
 
 HISTORICAL_WINDOWS: dict[str, tuple[datetime, datetime]] = {

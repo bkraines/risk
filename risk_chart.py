@@ -503,26 +503,156 @@ def draw_zscore_qq_single(ret: xr.DataArray, vol: xr.DataArray, factor_name: str
     return draw_zscore_qq(ret, vol, [(factor_name, vol_type)])
 
 
-def px_heatmap(da: xr.DataArray, x: str, y: str, color_scale: Optional[str] = 'RdBu_r', title: Union[str, None] = None, 
-               x_title: bool = False, y_title: bool = False, show_colorbar: bool = False, fig_format: Union[dict, None] = None) -> Figure:
+def transpose_for_plot(da: xr.DataArray, x: str, y: str, t: Optional[str] = None) -> xr.DataArray:
+    """
+    Return DataArray with dimensions ordered as (y, x[, t]) for plotting.
 
+    Avoids transpose if order is already correct.
+    """
+    dims = [d for d in (y, x, t) if d is not None]
+    if list(da.dims) != dims:
+        da = da.transpose(*dims)
+    return da
+
+
+def add_string_coord_for_animation(da: xr.DataArray, 
+                                   date_coord: Optional[str]
+                                   ) -> tuple[xr.DataArray, Optional[str]]:
+    """
+    If date_coord is a datetime coordinate, add a string-formatted
+    coordinate for animation frames.
+
+    Returns the updated DataArray and the coordinate name to use
+    for animation (string coordinate if added, else original).
+    """
+    if date_coord and isinstance(da.indexes.get(date_coord), pd.DatetimeIndex):
+        string_coord = f"{date_coord}_str"
+        da = da.assign_coords({
+            string_coord: (date_coord, da.coords[date_coord].dt.strftime('%Y-%m-%d').data)
+        })
+        return da, string_coord
+    return da, date_coord
+
+
+def px_heatmap(da: xr.DataArray, 
+               x: str, y: str,
+               animation_frame: Optional[str] = None,
+               title: Optional[str] = None,
+               aspect: str = 'auto',
+               color_scale: Optional[str] = 'RdBu_r',
+               show_colorbar: bool = False,
+               ) -> Figure:
+    da = transpose_for_plot(da, x, y, animation_frame)
+    if animation_frame is not None:
+        da, animation_coord = add_string_coord_for_animation(da, animation_frame)
+    else:
+        animation_coord = None
+
+    # animation_coord = 'date'
+    fig = px.imshow(
+        da,
+        animation_frame=animation_coord,
+        color_continuous_scale=color_scale,
+        zmin=-1,
+        zmax=+1,
+        aspect=aspect,
+        origin="lower",
+    )
+
+    fig.update_layout(
+        coloraxis_showscale=show_colorbar,
+        yaxis_autorange="reversed",
+        title=title,
+        xaxis_title=None,
+        yaxis_title=None,
+    )
+
+
+    # if animation_frame == 'date':
+    #     fig.for_each_trace(lambda t: t.update(name=pd.to_datetime(t.name).strftime('%Y-%m-%d')))
+
+    return fig
+    # return da
+
+
+def draw_corr_matrix(corr: xr.DataArray, 
+                     factor_name: str = 'factor_name', 
+                     factor_name_1: str = 'factor_name_1', 
+                     animation_frame: Optional[str] = None, 
+                     corr_type: Optional[int] = None, 
+                     height: int = 800, 
+                     title: Optional[str] = None) -> Figure:
+    # TODO: Height doesn't seem functional
+    # TODO: Parameterize animation resampling (monthly?)
+    # TODO: Format animation date units
+    
+    # if animation_frame:
+    #     animation_frame = 'date'
+    #     da = corr.sel(date=slice('2025', None)) #TODO: Remove this after testing!
+    # else:
+    #     da = corr.sel(date=corr.date.max()).squeeze()
+    da = corr.sel(corr_type=corr_type)
+    # da = corr.sel(corr_type=corr_type, date=corr.date.max())
+    # da.coords['date'] = da['date'].dt.strftime('%Y-%m-%d')
+    
+    if title is None:
+        title = f'Correlation ({corr_type}-day halflife)'
+    fig = (px_heatmap(da, 
+                      x=factor_name, 
+                      y=factor_name_1, 
+                      animation_frame=animation_frame, 
+                      title=title, 
+                      aspect='equal')
+           .update_layout(height=height,
+                          coloraxis_showscale=False,
+                          xaxis_title=None,
+                          yaxis_title=None,
+                          xaxis_side='top',
+                        #   yaxis_side='right')
+                        )
+           )
+    return fig
+
+
+def px_heatmap_old(da: xr.DataArray, x: str, y: str, 
+               animation_frame: Optional[str] = None,
+               title: Optional[str] = None, 
+               aspect: str = 'auto',
+               color_scale: Optional[str] = 'RdBu_r',
+               show_colorbar: bool = False,
+            #    fig_format: Union[dict, None] = None
+               ) -> Figure:
+
+    # if color_scale is None:
+    #     color_scale = [
+    #         [0.0, "#1f77b4"],  # Plotly default blue
+    #         [0.5, "#ffffff"],  # white center
+    #         [1.0, "#d62728"],  # Plotly default red
+    #     ]
 
     # For fig.imshow, orient DataArray values as (y, x), e.g (rows, columns):
     if da.dims != (y, x):
         da = da.transpose(y, x)
 
+    if animation_frame:
+        da.coords[animation_frame] = da[animation_frame].dt.strftime('%Y-%m-%d')
+
     fig = px.imshow(da,
-                    x=da[x],
-                    y=da[y],
+                    # x=da[x],
+                    # y=da[y],
+                    animation_frame=animation_frame,
                     color_continuous_scale=color_scale,
-                    aspect="auto",
+                    zmin=-1,
+                    zmax=+1,
+                    # zmid=0  # Calcuated automatically. Explicit definition supported only in `go.Heatmap`.
+                    aspect=aspect,
                     origin="lower",
-                    # labels=dict(x="Date", y="Factor", color="Correlation")
+                    # **fig_format,
                     )
 
     fig.update_layout(coloraxis_showscale=show_colorbar,
                       yaxis_autorange="reversed",
-                      yaxis_side="right",
+                    #   yaxis_side=yaxis_side,
                       title=title,
                       xaxis_title=None,
                       yaxis_title=None,
@@ -535,8 +665,10 @@ def draw_correlation_heatmap(corr: xr.DataArray, fixed_factor: str, corr_type, h
     # TODO: Resample data weekly or monthly to control which pixels are selected in chart
     if title is None:
         title = f"Correlation with {fixed_factor} ({corr_type}-day halflife)"
-    da = corr.sel(factor_name=fixed_factor, corr_type=corr_type)
-    fig = (px_heatmap(da, x='date', y='factor_name_1', title=title)
-           .update_layout(height=height))
+    da = corr.sel(factor_name_1=fixed_factor, corr_type=corr_type)
+    fig = (px_heatmap(da, x='date', y='factor_name', title=title)
+           .update_layout(height=height,
+                          xaxis_side='top',
+                          yaxis_side='right'))
     return fig
 
