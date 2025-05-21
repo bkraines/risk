@@ -17,13 +17,15 @@ end_date = datetime.today()
 start_date = end_date - timedelta(days=30 * 365)
 
 # Download the adjusted closing prices for all tickers
-price_data = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
+# price_data = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
+price_data = yf.download(tickers, start=start_date, end=end_date)['Close'] # API Changed
 
 # Calculate daily returns - *************************************   fix to account for diffrent bus days carry forward
 returns = price_data.pct_change().dropna()
 
 # Generate month-end rebalancing dates using 'ME'
-rebalancing_dates = returns.resample('ME').last().index
+# rebalancing_dates = returns.resample('ME').last().index
+rebalancing_dates = returns.resample('M').last().index # ME is deprecated
 
 # Initialize a DataFrame to store portfolio weights in long format
 portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
