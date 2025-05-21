@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -6,36 +8,6 @@ from datetime import datetime, timedelta
 from collections import OrderedDict
 from scipy.optimize import minimize
 
-# Define the full list of tickers
-#tickers = ['SPY', 'IEF', 'QQQ', 'IWM', 'EEM']
-tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
-x_tickers=[ 'AGG', 'IEF', 'VMBS', 'IEI', 'LQD', 'TLT', 'TIP', 'SHY', 'EMB']
-
-#************ assert x_tickers is a subset of ticker
-# Define the start and end dates
-end_date = datetime.today()
-start_date = end_date - timedelta(days=30 * 365)
-
-# Download the adjusted closing prices for all tickers
-# price_data = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
-price_data = yf.download(tickers, start=start_date, end=end_date)['Close'] # API Changed
-
-# Calculate daily returns - *************************************   fix to account for diffrent bus days carry forward
-returns = price_data.pct_change().dropna()
-
-# Generate month-end rebalancing dates using 'ME'
-# rebalancing_dates = returns.resample('ME').last().index
-rebalancing_dates = returns.resample('M').last().index # ME is deprecated
-
-# Initialize a DataFrame to store portfolio weights in long format
-portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
-
-# Set half-life for exponential weighting (6 months ~ 126 trading days)
-halflife = 126
-min_periods = 60  # Minimum number of data points required
-
-# Set the lag parameter (number of business days)
-lag = 1  # Adjust as needed call it   ******** execution delay
 
 
 def construct_fixed_weight_portfolio(returns_up_to_date, available_assets, **kwargs):
@@ -102,6 +74,8 @@ def construct_inverse_volatility_portfolio(returns_up_to_date, available_assets,
     if len(available_assets) == 0:
         return pd.Series(dtype=float)
     # Compute exponentially weighted standard deviation
+    halflife = kwargs.get('halflife')
+    min_periods = kwargs.get('min_periods')
     ewm_std = returns_up_to_date[available_assets].ewm(halflife=halflife, min_periods=min_periods).std().iloc[-1]
     # Drop NaNs to avoid division errors
     ewm_std = ewm_std.dropna()
@@ -174,7 +148,6 @@ def construct_tracking_portfolio(returns_up_to_date, available_assets, **kwargs)
 
     return weights
 
-
 def construct_tracking_with_penalty(returns_up_to_date, available_assets, **kwargs):
     """
     Constructs a tracking portfolio without the sum(w) = 1 constraint.
@@ -243,10 +216,45 @@ def construct_tracking_with_penalty(returns_up_to_date, available_assets, **kwar
 
 
 
+
+# INITIALIZATION
+
+
+# Define the full list of tickers
+#tickers = ['SPY', 'IEF', 'QQQ', 'IWM', 'EEM']
+tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
+x_tickers=[ 'AGG', 'IEF', 'VMBS', 'IEI', 'LQD', 'TLT', 'TIP', 'SHY', 'EMB']
+
+#************ assert x_tickers is a subset of ticker
+# Define the start and end dates
+end_date = datetime.today()
+start_date = end_date - timedelta(days=30 * 365)
+
+# Download the adjusted closing prices for all tickers
+# price_data = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
+price_data = yf.download(tickers, start=start_date, end=end_date)['Close'] # API Changed
+
+# Calculate daily returns - *************************************   fix to account for diffrent bus days carry forward
+returns = price_data.pct_change().dropna()
+
+# Generate month-end rebalancing dates using 'ME'
+
+rebalancing_dates = returns.resample('M').last().index # ME is deprecated
+
+# Initialize a DataFrame to store portfolio weights in long format
+portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
+
+# Set half-life for exponential weighting (6 months ~ 126 trading days)
+halflife = 126
+min_periods = 60  # Minimum number of data points required
+
+# Set the lag parameter (number of business days)
+lag = 1  # Adjust as needed call it   ******** execution delay
+
+
+
+
 # Portfolio Construction
-
-
-
 
 # Map function names to actual functions
 portfolio_functions = {
@@ -283,6 +291,10 @@ portfolios = OrderedDict({
     "Vol_wtd_ptfl": {
         "function_to_call": "VW",
         "ticker_subset": x_tickers,
+        "other_options": {
+            "halflife": halflife,
+            "min_periods": min_periods,
+        },
     },
     "EW_ptfl": {
         "function_to_call": "EW",
@@ -308,195 +320,228 @@ portfolios = OrderedDict({
     },
 })
 
-# Initialize a dictionary to store portfolio returns
-portfolio_returns_dict = {}
 
-# Store previous weights for tracking portfolio
-previous_weights_tracking = None
+def build_all_portfolios(
+    returns: pd.DataFrame,
+    rebalancing_dates: pd.DatetimeIndex,
+    portfolio_functions: dict,
+    portfolios: OrderedDict,
+    halflife: int,
+    min_periods: int,
+    lag: int,
+    fixed_weights_data: Optional[pd.DataFrame] = None,
+    portfolio_weights_long: Optional[pd.DataFrame] = None,
+) -> tuple[dict[str, pd.Series], pd.DataFrame, pd.DataFrame]:
+    
+    # Initialize a dictionary to store portfolio returns
+    portfolio_returns_dict = {}
 
-# Loop over each portfolio
-for portfolio_name, portfolio_info in portfolios.items():
-    function_name = portfolio_info["function_to_call"]
-    subset_tickers = portfolio_info["ticker_subset"]
-    other_options = portfolio_info.get("other_options", {}).copy()
-    portfolio_function = portfolio_functions[function_name]
+    # Store previous weights for tracking portfolio
+    previous_weights_tracking = None
 
-    # Initialize a DataFrame to store weights for this portfolio
-    portfolio_weights = pd.DataFrame(index=rebalancing_dates, columns=subset_tickers, dtype=float)
+    print(f'portfolio names:  {portfolios.keys()}')
+    # Loop over each portfolio
+    for portfolio_name, portfolio_info in portfolios.items():
+        function_name = portfolio_info["function_to_call"]
+        subset_tickers = portfolio_info["ticker_subset"]
+        other_options = portfolio_info.get("other_options", {}).copy()
+        portfolio_function = portfolio_functions[function_name]
 
-    # Loop over each rebalancing date to compute weights
-    for date in rebalancing_dates:
-        # Returns up to the current date
-        returns_up_to_date = returns.loc[:date]
+        # Initialize a DataFrame to store weights for this portfolio
+        portfolio_weights = pd.DataFrame(index=rebalancing_dates, columns=subset_tickers, dtype=float)
 
-        # Identify available assets for the portfolio
-        available_assets = []
-        for ticker in subset_tickers:
-            asset_returns = returns_up_to_date[ticker].dropna()
-            if len(asset_returns) >= min_periods:
-                available_assets.append(ticker)
+        print(f'running {portfolio_name=} with {len(subset_tickers)} tickers and {returns.shape} returns')
+        # Loop over each rebalancing date to compute weights
+        for date in rebalancing_dates:
+            # Returns up to the current date
+            returns_up_to_date = returns.loc[:date]
 
-        if len(available_assets) == 0:
-            # Set weights to zero for all subset_tickers
-            weights = pd.Series(0.0, index=subset_tickers)
+            # Identify available assets for the portfolio
+            available_assets = []
+            for ticker in subset_tickers:
+                asset_returns = returns_up_to_date[ticker].dropna()
+                if len(asset_returns) >= min_periods:
+                    available_assets.append(ticker)
+
+            if len(available_assets) == 0:
+                # Set weights to zero for all subset_tickers
+                weights = pd.Series(0.0, index=subset_tickers)
+                # Store weights
+                portfolio_weights.loc[date] = weights
+                # For tracking portfolio, reset previous_weights_tracking
+                if function_name == "TRACK":
+                    previous_weights_tracking = None
+                continue
+
+            # For the tracking portfolio, set initial weights
+            if function_name == "TRACK":
+                if previous_weights_tracking is not None and len(previous_weights_tracking) == len(available_assets):
+                    other_options['initial_weights'] = previous_weights_tracking
+                    other_options['initial_weights'] = np.array([1] + [0] * (len(available_assets) - 1))  # override to delete
+
+                else:
+                    other_options['initial_weights'] = np.array([1] + [0] * (len(available_assets) - 1))
+
+            # For the fixed weight portfolio, provide rebalancing date in kwargs
+            if function_name == "FIXED":
+                other_options['rebalancing_date'] = date
+
+            # Construct the portfolio weights
+            try:
+                weights = portfolio_function(
+                    returns_up_to_date, available_assets, **other_options
+                )
+            except Exception as e:
+                print(f"Error constructing weights for {portfolio_name} on {date}: {e}")
+                weights = pd.Series(dtype=float)
+
+            # Reindex weights to subset_tickers, setting weights to zero for unavailable assets
+            weights = weights.reindex(subset_tickers, fill_value=0.0)
+
             # Store weights
             portfolio_weights.loc[date] = weights
-            # For tracking portfolio, reset previous_weights_tracking
+
+            # Store previous weights for tracking portfolio
             if function_name == "TRACK":
-                previous_weights_tracking = None
-            continue
+                previous_weights_tracking = weights.loc[available_assets].values
 
-        # For the tracking portfolio, set initial weights
+            # Store weights in long format
+            weights_long = pd.DataFrame({
+                "portfolio_name": portfolio_name,
+                "date": date,
+                "ticker": weights.index,
+                "weight": weights.values
+            })
+
+            # Remove existing entries for the current date and portfolio_name
+            if not portfolio_weights_long.empty:
+                portfolio_weights_long = portfolio_weights_long[~(
+                    (portfolio_weights_long['portfolio_name'] == portfolio_name) & (portfolio_weights_long['date'] == date)
+                )]
+
+            # Proceed to concatenate if weights_long is not empty and has valid data
+            if not weights_long.empty and weights_long.notna().any().any():
+                portfolio_weights_long = pd.concat([portfolio_weights_long, weights_long], ignore_index=True)
+
+        # Set the lag parameter (number of business days)
+        #lag = 1  # Adjust as needed
+
+        # Expand weights to daily frequency by forward-filling
+        daily_weights = portfolio_weights.reindex(returns.index).ffill().infer_objects(copy=False)
+
+        # Shift the daily weights by the lag to apply them starting from the desired date
+        daily_weights = daily_weights.shift(lag)
+
+        # Fill any missing weights with zeros (before weights start to be applied)
+        daily_weights = daily_weights.fillna(0.0)
+
+        # Ensure that weights are aligned with the returns index
+        daily_weights = daily_weights.loc[returns.index]
+
+        # For the 'TRACK' portfolio, ensure the target portfolio returns are available
         if function_name == "TRACK":
-            if previous_weights_tracking is not None and len(previous_weights_tracking) == len(available_assets):
-                other_options['initial_weights'] = previous_weights_tracking
-                other_options['initial_weights'] = np.array([1] + [0] * (len(available_assets) - 1))  # override to delete
+            # Ensure the target portfolio returns are available
+            target_portfolio_name = other_options.get('target_portfolio_name')
+            if target_portfolio_name not in returns.columns:
+                raise ValueError(f"Target portfolio '{target_portfolio_name}' returns are not available.")
 
-            else:
-                other_options['initial_weights'] = np.array([1] + [0] * (len(available_assets) - 1))
+        # Calculate portfolio returns
+        portfolio_returns = daily_weights.multiply(returns[subset_tickers], axis=1).sum(axis=1)
 
-        # For the fixed weight portfolio, provide rebalancing date in kwargs
-        if function_name == "FIXED":
-            other_options['rebalancing_date'] = date
+        # Name the portfolio returns
+        portfolio_returns.name = portfolio_name
 
-        # Construct the portfolio weights
-        try:
-            weights = portfolio_function(
-                returns_up_to_date, available_assets, **other_options
-            )
-        except Exception as e:
-            print(f"Error constructing weights for {portfolio_name} on {date}: {e}")
-            weights = pd.Series(dtype=float)
+        # If portfolio column already exists in returns, remove it
+        returns = returns.drop(columns=[portfolio_name], errors='ignore')
 
-        # Reindex weights to subset_tickers, setting weights to zero for unavailable assets
-        weights = weights.reindex(subset_tickers, fill_value=0.0)
+        # Append the portfolio returns to the returns DataFrame
+        returns = returns.join(portfolio_returns)
 
-        # Store weights
-        portfolio_weights.loc[date] = weights
-
-        # Store previous weights for tracking portfolio
-        if function_name == "TRACK":
-            previous_weights_tracking = weights.loc[available_assets].values
-
-        # Store weights in long format
-        weights_long = pd.DataFrame({
-            "portfolio_name": portfolio_name,
-            "date": date,
-            "ticker": weights.index,
-            "weight": weights.values
-        })
-
-        # Remove existing entries for the current date and portfolio_name
-        if not portfolio_weights_long.empty:
-            portfolio_weights_long = portfolio_weights_long[~(
-                (portfolio_weights_long['portfolio_name'] == portfolio_name) & (portfolio_weights_long['date'] == date)
-            )]
-
-        # Proceed to concatenate if weights_long is not empty and has valid data
-        if not weights_long.empty and weights_long.notna().any().any():
-            portfolio_weights_long = pd.concat([portfolio_weights_long, weights_long], ignore_index=True)
-
-    # Set the lag parameter (number of business days)
-    #lag = 1  # Adjust as needed
-
-    # Expand weights to daily frequency by forward-filling
-    daily_weights = portfolio_weights.reindex(returns.index).ffill().infer_objects(copy=False)
-
-    # Shift the daily weights by the lag to apply them starting from the desired date
-    daily_weights = daily_weights.shift(lag)
-
-    # Fill any missing weights with zeros (before weights start to be applied)
-    daily_weights = daily_weights.fillna(0.0)
-
-    # Ensure that weights are aligned with the returns index
-    daily_weights = daily_weights.loc[returns.index]
-
-    # For the 'TRACK' portfolio, ensure the target portfolio returns are available
-    if function_name == "TRACK":
-        # Ensure the target portfolio returns are available
-        target_portfolio_name = other_options.get('target_portfolio_name')
-        if target_portfolio_name not in returns.columns:
-            raise ValueError(f"Target portfolio '{target_portfolio_name}' returns are not available.")
-
-    # Calculate portfolio returns
-    portfolio_returns = daily_weights.multiply(returns[subset_tickers], axis=1).sum(axis=1)
-
-    # Name the portfolio returns
-    portfolio_returns.name = portfolio_name
-
-    # If portfolio column already exists in returns, remove it
-    returns = returns.drop(columns=[portfolio_name], errors='ignore')
-
-    # Append the portfolio returns to the returns DataFrame
-    returns = returns.join(portfolio_returns)
-
-    # Store the portfolio returns in the dictionary
-    portfolio_returns_dict[portfolio_name] = portfolio_returns
+        # Store the portfolio returns in the dictionary
+        portfolio_returns_dict[portfolio_name] = portfolio_returns
+        
+    return returns, portfolio_weights_long
 
 
-# Update the list of tickers with portfolio names
-all_tickers_with_portfolios = tickers.copy()
-for portfolio_name in portfolios.keys():
-    if portfolio_name in all_tickers_with_portfolios:
-        all_tickers_with_portfolios.remove(portfolio_name)
-    all_tickers_with_portfolios.append(portfolio_name)
 
-# Compute cumulative returns for all assets and portfolios
-cumulative_returns = (1 + returns).cumprod()
+portfolio_tuple = build_all_portfolios(returns,
+                                       rebalancing_dates,
+                                       portfolio_functions,
+                                       portfolios,
+                                       halflife,
+                                       min_periods,
+                                       lag,
+                                       fixed_weights_data,
+                                       portfolio_weights_long
+                                       )
+returns, portfolio_weights_long = portfolio_tuple
 
-# Define function to compute summary statistics
-def compute_summary_stats(series):
-    """
-    Computes summary statistics for a given time series of cumulative returns.
-    """
-    total_period_in_years = (series.index[-1] - series.index[0]).days / 365.25
-    cumulative_return = series.iloc[-1] - 1  # cumulative_return over the period
-    annualized_return = series.iloc[-1] ** (1 / total_period_in_years) - 1
-    # For annualized volatility, use daily returns
-    daily_returns = series.pct_change().dropna()
-    annualized_volatility = daily_returns.std() * np.sqrt(252)
-    sharpe_ratio = annualized_return / annualized_volatility
-    return pd.Series({
-        'Cumulative Return': cumulative_return,
-        'Annualized Return': annualized_return,
-        'Annualized Volatility': annualized_volatility,
-        'Sharpe Ratio': sharpe_ratio
-    })
 
-# Initialize summary stats DataFrame
-summary_stats_df = pd.DataFrame()
 
-# Compute summary statistics for portfolios
-for portfolio_name in portfolios.keys():
-    portfolio_cum_returns = cumulative_returns[portfolio_name]
-    stats = compute_summary_stats(portfolio_cum_returns)
-    summary_stats_df[portfolio_name] = stats
 
-# Transpose for better readability
-summary_stats_df = summary_stats_df.T
+# # Update the list of tickers with portfolio names
+# all_tickers_with_portfolios = tickers.copy()
+# for portfolio_name in portfolios.keys():
+#     if portfolio_name in all_tickers_with_portfolios:
+#         all_tickers_with_portfolios.remove(portfolio_name)
+#     all_tickers_with_portfolios.append(portfolio_name)
 
-# Display summary statistics
-print("Summary Statistics for Portfolios:")
-print(summary_stats_df)
-print()
+# # Compute cumulative returns for all assets and portfolios
+# cumulative_returns = (1 + returns).cumprod()
 
-# Plot cumulative returns for portfolios using Plotly
-fig = go.Figure()
+# # Define function to compute summary statistics
+# def compute_summary_stats(series):
+#     """
+#     Computes summary statistics for a given time series of cumulative returns.
+#     """
+#     total_period_in_years = (series.index[-1] - series.index[0]).days / 365.25
+#     cumulative_return = series.iloc[-1] - 1  # cumulative_return over the period
+#     annualized_return = series.iloc[-1] ** (1 / total_period_in_years) - 1
+#     # For annualized volatility, use daily returns
+#     daily_returns = series.pct_change().dropna()
+#     annualized_volatility = daily_returns.std() * np.sqrt(252)
+#     sharpe_ratio = annualized_return / annualized_volatility
+#     return pd.Series({
+#         'Cumulative Return': cumulative_return,
+#         'Annualized Return': annualized_return,
+#         'Annualized Volatility': annualized_volatility,
+#         'Sharpe Ratio': sharpe_ratio
+#     })
 
-for portfolio_name in portfolios.keys():
-    fig.add_trace(go.Scatter(
-        x=cumulative_returns.index,
-        y=cumulative_returns[portfolio_name],
-        mode='lines',
-        name=portfolio_name
-    ))
+# # Initialize summary stats DataFrame
+# summary_stats_df = pd.DataFrame()
 
-fig.update_layout(
-    title='Cumulative Returns of Portfolios',
-    xaxis_title='Date',
-    yaxis_title='Cumulative Return',
-    legend_title='Portfolio',
-    template='plotly_white'
-)
+# # Compute summary statistics for portfolios
+# for portfolio_name in portfolios.keys():
+#     portfolio_cum_returns = cumulative_returns[portfolio_name]
+#     stats = compute_summary_stats(portfolio_cum_returns)
+#     summary_stats_df[portfolio_name] = stats
 
-fig.show()
+# # Transpose for better readability
+# summary_stats_df = summary_stats_df.T
+
+# # Display summary statistics
+# print("Summary Statistics for Portfolios:")
+# print(summary_stats_df)
+# print()
+
+# # Plot cumulative returns for portfolios using Plotly
+# fig = go.Figure()
+
+# for portfolio_name in portfolios.keys():
+#     fig.add_trace(go.Scatter(
+#         x=cumulative_returns.index,
+#         y=cumulative_returns[portfolio_name],
+#         mode='lines',
+#         name=portfolio_name
+#     ))
+
+# fig.update_layout(
+#     title='Cumulative Returns of Portfolios',
+#     xaxis_title='Date',
+#     yaxis_title='Cumulative Return',
+#     legend_title='Portfolio',
+#     template='plotly_white'
+# )
+
+# fig.show()
