@@ -6,13 +6,14 @@ import streamlit as st
 
 from risk_data import get_factor_data
 
-from dashboard_feedback   import build_dashboard as feedback
-from dashboard_timeseries import build_dashboard as time_series
-from dashboard_mds        import build_dashboard as mds
-from dashboard_master     import build_dashboard as master
-from dashboard_monitor    import build_dashboard as monitor
-from dashboard_volfitness import build_dashboard as vol_fitness
+from dashboard_feedback    import build_dashboard as feedback
+from dashboard_timeseries  import build_dashboard as time_series
+from dashboard_mds         import build_dashboard as mds
+from dashboard_master      import build_dashboard as master
+from dashboard_monitor     import build_dashboard as monitor
+from dashboard_volfitness  import build_dashboard as vol_fitness
 from dashboard_correlation import build_dashboard as cross_section
+from dashboard_portfolios  import build_dashboard as portfolios
 
 # from risk_util import add_sidebar_defaults
 
@@ -42,12 +43,14 @@ pg = st.navigation([
                     st.Page(lambda: vol_fitness(factor_data),
                             title='Vol Fitness',
                             url_path='vol_fitness'),
+
+                    st.Page(lambda: portfolios(factor_data),
+                            title='Portfolios',
+                            url_path='portfolios'),
                     
                     st.Page(lambda: master(factor_data),
                             title='Factor Master',
                             url_path='factor_master'),
-                    
-                    
                     ])
 
 # add_sidebar_defaults()
