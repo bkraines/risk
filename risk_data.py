@@ -1,15 +1,15 @@
 from typing import List, Optional
-import os
 
 import pandas as pd
 import xarray as xr
 
 import yfinance as yf
 
-from risk_dates import business_days_ago, latest_business_day
+from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
+from risk_dates import business_days_ago #, latest_business_day
 from risk_util import xr_pct_change, safe_reindex, cache
 from risk_stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
-from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
+
 
 def get_yahoo_data(ticker, field_name):
     # TODO: Check cache first
@@ -80,6 +80,7 @@ def get_factor_master(factor_data: Optional[xr.Dataset] = None, **kwargs) -> pd.
         df = pd.DataFrame(factor_data.factor_name.attrs).T
         df.index = pd.CategoricalIndex(df.index, categories=df.index, ordered=True, name='factor_name')
     return df
+
 
 def get_portfolios(file_name: str = FACTOR_FILENAME, file_dir = FACTOR_DIR, sheet_name: str = 'read_composites', index_col: str = 'portfolio_name') -> pd.DataFrame:
     # FIXME: I moved to a flat directory structure

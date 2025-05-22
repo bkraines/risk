@@ -7,7 +7,6 @@ from risk_config_port import portfolios
 import plotly.express as px
 
 
-
 def draw_portfolio_cumret(returns: pd.DataFrame, unit=10000) -> Figure:
     cumulative_returns = returns[portfolios.keys()].div(unit).add(1).cumprod()
     return px.line(cumulative_returns, template='plotly_white')

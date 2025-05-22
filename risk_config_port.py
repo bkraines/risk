@@ -1,8 +1,6 @@
 # Define the portfolios using an OrderedDict
 import pandas as pd
-
 from collections import OrderedDict
-
 
 # Prepare the fixed weights data with index set directly in DataFrame constructor
 fixed_weights_data = pd.DataFrame(
@@ -19,7 +17,7 @@ halflife = 126 # Set half-life for exponential weighting (6 months ~ 126 trading
 min_periods = 60  # Minimum number of data points required
 
 portfolios = OrderedDict({
-    "TCW": {
+    "Client": {
         "function_to_call": "FIXED",
         "ticker_subset": ['MWTIX',  'SHY'],
         "other_options": {

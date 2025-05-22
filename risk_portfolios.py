@@ -1,17 +1,19 @@
 from typing import Optional
-
-import pandas as pd
-import numpy as np
-import yfinance as yf
-from datetime import datetime, timedelta
 from collections import OrderedDict
+
+from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
 from scipy.optimize import minimize
+
+import yfinance as yf
 
 from risk_config_port import halflife, min_periods, portfolios
 from risk_chart_port import draw_portfolio_cumret, draw_portfolio_weights, get_portfolio_summary
 
 
-
+# TODO: Fix kwargs.get catch all by moving parameters into function signatures
 def construct_fixed_weight_portfolio(returns_up_to_date, available_assets, **kwargs):
     """
     Returns fixed weights for the date that is closest but before the rebalancing date.
@@ -269,7 +271,7 @@ def build_all_portfolios(portfolios: OrderedDict,
         # Initialize a DataFrame to store weights for this portfolio
         portfolio_weights = pd.DataFrame(index=rebalancing_dates, columns=subset_tickers, dtype=float)
 
-        print(f'Running {portfolio_name=} with {len(subset_tickers)} tickers and {returns.shape} returns')
+        print(f'Running portfolio {portfolio_name} with {len(subset_tickers)} tickers from {returns.shape[1]} factors and {returns.shape[0]} days of return')
         # Loop over each rebalancing date to compute weights
         for date in rebalancing_dates:
             # Returns up to the current date
@@ -377,6 +379,7 @@ def build_all_portfolios(portfolios: OrderedDict,
         portfolio_returns_dict[portfolio_name] = portfolio_returns
         
     return returns, portfolio_weights_long
+
 
 def main()-> None:
     tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]

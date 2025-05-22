@@ -55,6 +55,7 @@ HISTORICAL_WINDOWS: dict[str, tuple[datetime, datetime]] = {
     "QE1":                          (datetime(2008, 11, 25), datetime(2010, 3, 31)),
     "QE2":                          (datetime(2010, 11, 3), datetime(2011, 6, 30)),
     "QE3":                          (datetime(2012, 9, 13), datetime(2014, 10, 29)),
+    "QT1":                          (datetime(2017, 6, 1), datetime(2019, 9, 1)),
     "Fed Hiking Cycle (2015–2018)": (datetime(2015, 12, 1), datetime(2018, 12, 31)),
     "Repo Liquidity (Sep 2019)":    (datetime(2019, 9, 16), datetime(2020, 1, 31)),
     "Aggressive Fed Hikes (2022)":  (datetime(2022, 3, 16), datetime(2023, 7, 31)),
