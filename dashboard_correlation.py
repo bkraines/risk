@@ -10,6 +10,7 @@ def build_dashboard(factor_data):
     # TODO: Include time series of factor ratios
     # TODO: Toggle animation frame for correlation matrices
     #       Determine resampling, interval, etc.
+    # TODO: Sort correlation matrix by factor heirarchy
 
     corr_index = 1 if len(HALFLIFES) > 1 else 0
 

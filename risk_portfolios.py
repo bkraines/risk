@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from scipy.optimize import minimize
 
 import yfinance as yf
 
 from risk_config_port import halflife, min_periods, PORTFOLIOS
-from risk_chart_port import draw_portfolio_cumret, draw_portfolio_weights, get_portfolio_summary
+# from risk_chart_port import draw_portfolio_cumret, draw_portfolio_weights, get_portfolio_summary
 
 
 # TODO: Fix kwargs.get catch all by moving parameters into function signatures
@@ -271,7 +272,7 @@ def build_all_portfolios(portfolios: OrderedDict,
         # Initialize a DataFrame to store weights for this portfolio
         portfolio_weights = pd.DataFrame(index=rebalancing_dates, columns=subset_tickers, dtype=float)
 
-        print(f'Running portfolio {portfolio_name} with {len(subset_tickers)} tickers from {returns.shape[1]} factors and {returns.shape[0]} days of return')
+        print(f'Running portfolio {portfolio_name} with {len(subset_tickers)} out of {returns.shape[1]} factors for {len(rebalancing_dates)} rebalancing dates')
         # Loop over each rebalancing date to compute weights
         for date in rebalancing_dates:
             # Returns up to the current date
@@ -381,6 +382,17 @@ def build_all_portfolios(portfolios: OrderedDict,
     return returns, portfolio_weights_long
 
 
+def portfolio_weights_to_xarray(portfolio_weights_long: pd.DataFrame) -> xr.DataArray: 
+    # TODO: Store portfolio weights in sparse DataArray, perhaps with only rebalancing dates
+    return (portfolio_weights_long
+            # .reset_index()
+            .set_index(['date', 'portfolio_name', 'ticker'])
+            # .squeeze()
+            ['weight'] # Column select guarantees `pd.Series`, unlike `.squeeze()`
+            .to_xarray()
+            .ffill('date'))
+        
+
 def main()-> None:
     tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
     returns = get_returns_basic(tickers)
@@ -393,9 +405,9 @@ def main()-> None:
     portfolio_tuple = build_all_portfolios(PORTFOLIOS, returns, rebalancing_dates)
     returns, portfolio_weights_long = portfolio_tuple
 
-    draw_portfolio_cumret(returns, unit=1).show()
-    draw_portfolio_weights(portfolio_weights_long).show()
-    print(get_portfolio_summary(returns, unit=1))
+    # draw_portfolio_cumret(returns, unit=1).show()
+    # draw_portfolio_weights(portfolio_weights_long).show()
+    # print(get_portfolio_summary(returns, unit=1))
 
 
 if __name__ == "__main__":

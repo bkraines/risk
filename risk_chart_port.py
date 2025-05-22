@@ -1,22 +1,38 @@
+from typing import Iterable, Optional
 from plotly.graph_objects import Figure
 
 from numpy import sqrt
 import pandas as pd
+import xarray as xr
 
-from risk_config_port import PORTFOLIOS
 import plotly.express as px
 
+from risk_config_port import PORTFOLIOS
+from risk_portfolios import portfolio_weights_to_xarray
+from risk_chart import px_line
 
-def draw_portfolio_cumret(returns: pd.DataFrame, unit=10000) -> Figure:
+def draw_portfolio_cret_df(returns: pd.DataFrame, unit=10000) -> Figure:
     cumulative_returns = returns[PORTFOLIOS.keys()].div(unit).add(1).cumprod()
     return px.line(cumulative_returns, template='plotly_white')
 
 
-def draw_portfolio_weights(portfolio_weights_long):
-    ser = portfolio_weights_long.set_index(['date', 'portfolio_name', 'ticker'])
-    da = ser.to_xarray()['weight']
+def draw_portfolio_cret(cret: xr.DataArray, portfolio_names: Optional[Iterable] = None) -> Figure:
+    if portfolio_names is not None:
+        cret = cret.sel(factor_name=portfolio_names)
+    return px_line(cret,
+                   x='date',
+                   y='cret',
+                   color='factor_name',
+                   title='Cumulative Return of Portfolios')
 
-    fig = (px.imshow(da.transpose(),
+
+def draw_portfolio_weights(portfolio_weights: pd.DataFrame | xr.DataArray) -> Figure:
+    if isinstance(portfolio_weights, pd.DataFrame):
+        da = portfolio_weights_to_xarray(portfolio_weights)
+    else:
+        da = portfolio_weights
+
+    fig = (px.imshow(da.transpose().dropna('date', how='all'),
                      facet_col='portfolio_name',
                      facet_col_wrap=1,
                      height=1200,

@@ -14,6 +14,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 from risk_config import IMAGE_DIR
+from risk_data import get_factor_master
 from risk_stats import get_beta_pair, get_zscore
 
 # TODO: Share chart dimensions and template by extracting `fig_format_default` dict from `px_line`
@@ -122,6 +123,7 @@ def px_scatter(df, x, y, color_map_override=None, **kwargs):
 
 
 def px_bar(da: xr.DataArray, title: Optional[str] = None) -> Figure:
+    # TODO: Throws error if dataarray has duplicate column
     df = da.to_pandas()
     fig = (px.bar(df, barmode='group', 
                   title=title,
@@ -268,8 +270,8 @@ def draw_volatility(vol: xr.DataArray, factor_name: str, vol_type: list[int]) ->
     fig_sel = {'factor_name': factor_name,
                'vol_type': vol_type,
                }
-    ds = vol.sel(**fig_sel).dropna(dim='date')
-    fig = px_line(ds, x='date', y='vol', color='vol_type', 
+    da = vol.sel(**fig_sel).dropna(dim='date')
+    fig = px_line(da, x='date', y='vol', color='vol_type', 
                   title=f'Volatility of {factor_name}')
     return fig
 
@@ -575,13 +577,28 @@ def px_heatmap(da: xr.DataArray,
     # return da
 
 
+def sort_assets(corr: pd.DataFrame, sorting_factor: str, factor_master: Optional[pd.DataFrame]=None) -> pd.Index:
+    if factor_master is None:
+        factor_master = get_factor_master()
+    df = (corr.loc[[sorting_factor]]
+          .join(factor_master[['asset_class', 'hyper_factor']])
+          .assign(is_theme=lambda df: df['asset_class'] == 'Theme')
+          .assign(is_sorting_factor=lambda df: df.index == sorting_factor)
+          )
+    sorted_index = df.sort_values(by=['is_sorting_factor', 'hyper_factor', 'is_theme', sorting_factor], 
+                                  ascending=[False, False, True, False], key=abs).index
+    return sorted_index
+
+
+
 def draw_corr_matrix(corr: xr.DataArray, 
                      factor_name: str = 'factor_name', 
                      factor_name_1: str = 'factor_name_1', 
                      animation_frame: Optional[str] = None, 
                      corr_type: Optional[int] = None, 
                      height: int = 800, 
-                     title: Optional[str] = None) -> Figure:
+                     title: Optional[str] = None,
+                     toggle_sort = False) -> Figure:
     # TODO: Height doesn't seem functional
     # TODO: Parameterize animation resampling (monthly?)
     # TODO: Format animation date units
@@ -592,6 +609,7 @@ def draw_corr_matrix(corr: xr.DataArray,
     # else:
     #     da = corr.sel(date=corr.date.max()).squeeze()
     da = corr.sel(corr_type=corr_type)
+
     # da = corr.sel(corr_type=corr_type, date=corr.date.max())
     # da.coords['date'] = da['date'].dt.strftime('%Y-%m-%d')
     
@@ -601,10 +619,11 @@ def draw_corr_matrix(corr: xr.DataArray,
                       x=factor_name, 
                       y=factor_name_1, 
                       animation_frame=animation_frame, 
-                      title=title, 
+                    #   title=title, 
                       aspect='equal')
            .update_layout(height=height,
                           coloraxis_showscale=False,
+                          title=title,
                           xaxis_title=None,
                           yaxis_title=None,
                           xaxis_side='top',
@@ -614,58 +633,23 @@ def draw_corr_matrix(corr: xr.DataArray,
     return fig
 
 
-def px_heatmap_old(da: xr.DataArray, x: str, y: str, 
-               animation_frame: Optional[str] = None,
-               title: Optional[str] = None, 
-               aspect: str = 'auto',
-               color_scale: Optional[str] = 'RdBu_r',
-               show_colorbar: bool = False,
-            #    fig_format: Union[dict, None] = None
-               ) -> Figure:
-
-    # if color_scale is None:
-    #     color_scale = [
-    #         [0.0, "#1f77b4"],  # Plotly default blue
-    #         [0.5, "#ffffff"],  # white center
-    #         [1.0, "#d62728"],  # Plotly default red
-    #     ]
-
-    # For fig.imshow, orient DataArray values as (y, x), e.g (rows, columns):
-    if da.dims != (y, x):
-        da = da.transpose(y, x)
-
-    if animation_frame:
-        da.coords[animation_frame] = da[animation_frame].dt.strftime('%Y-%m-%d')
-
-    fig = px.imshow(da,
-                    # x=da[x],
-                    # y=da[y],
-                    animation_frame=animation_frame,
-                    color_continuous_scale=color_scale,
-                    zmin=-1,
-                    zmax=+1,
-                    # zmid=0  # Calcuated automatically. Explicit definition supported only in `go.Heatmap`.
-                    aspect=aspect,
-                    origin="lower",
-                    # **fig_format,
-                    )
-
-    fig.update_layout(coloraxis_showscale=show_colorbar,
-                      yaxis_autorange="reversed",
-                    #   yaxis_side=yaxis_side,
-                      title=title,
-                      xaxis_title=None,
-                      yaxis_title=None,
-                      )
-    
-    return fig
-
-
-def draw_correlation_heatmap(corr: xr.DataArray, fixed_factor: str, corr_type, height: int = 1200, title: str | None = None) -> Figure:
+def draw_correlation_heatmap(corr: xr.DataArray, fixed_factor: str, 
+                             corr_type, 
+                             height: int = 1200, title: Optional[str] = None,
+                             toggle_sort: bool = False, # NOT WORKING
+                             factor_master: Optional[pd.DataFrame] = None) -> Figure:
     # TODO: Resample data weekly or monthly to control which pixels are selected in chart
+    # TODO: Fix toggle_sort
     if title is None:
         title = f"Correlation with {fixed_factor} ({corr_type}-day halflife)"
+
+    # if toggle_sort:
+    #     corr_latest = corr.sel(date=corr.date.max(), corr_type=corr_type)
+    #     factor_list_sorted = sort_assets(corr_latest.to_pandas(), 'VMBS', factor_master)
+    #     corr = corr.sel(factor_name=factor_list_sorted)
+
     da = corr.sel(factor_name_1=fixed_factor, corr_type=corr_type)
+
     fig = (px_heatmap(da, x='date', y='factor_name', title=title)
            .update_layout(height=height,
                           xaxis_side='top',

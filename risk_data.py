@@ -10,7 +10,7 @@ from risk_dates import business_days_ago #, latest_business_day
 from risk_util import xr_pct_change, safe_reindex, cache
 from risk_stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from risk_config_port import PORTFOLIOS
-from risk_portfolios import build_all_portfolios
+from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
 
 def get_yahoo_data(ticker, field_name):
     # TODO: Check cache first
@@ -146,6 +146,8 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     # TODO: Check vol units
     # TODO: Refactor returns from yahoo, composites, and portfolios into separate functions
     # TODO: Add timing to console logs
+    # TODO: Enforce data variable and coordinate order in xarray Dataset
+    # TODO: Portfolios dict contains a pd.DataFrame, so can't be stored in attrs of zarr DataSet
     factor_master = get_factor_master(file_name='factor_master.xlsx', sheet_name=factor_set, portfolios=portfolios)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
@@ -203,13 +205,9 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     factor_data['corr'] = get_correlation_set(factor_data['ret'], halflifes)
     factor_data['factor_name'].attrs = factor_master.T.to_dict()
     if not factor_list_portfolios.empty:
-        # factor_data['portfolio_weights'] = portfolio_weights_long.rename_axis(columns='factor_name')
-        # ser = portfolio_weights_long.set_index(['date', 'portfolio_name', 'ticker'])
-        factor_data['portfolio_weights'] = (portfolio_weights_long
-                                            .reset_index()
-                                            .set_index(['date', 'portfolio_name', 'ticker'])
-                                            .to_xarray()
-                                            ['weight'])
+        factor_data['portfolio_weights'] = portfolio_weights_to_xarray(portfolio_weights_long)
+        # FIXME: Zarr only accepts JSON-serializable attributes, but `portfolios` contains a pd.DataFrame:
+        # factor_data['portfolio_name'].attrs = portfolios
     print('Factor construction complete')
     return factor_data #, diffusion_map, levels_latest
 
