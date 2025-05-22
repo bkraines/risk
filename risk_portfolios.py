@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from collections import OrderedDict
 from scipy.optimize import minimize
 
+from risk_config_port import fixed_weights_data, halflife, lag, min_periods, portfolios
+
 
 
 def construct_fixed_weight_portfolio(returns_up_to_date, available_assets, **kwargs):
@@ -214,6 +216,15 @@ def construct_tracking_with_penalty(returns_up_to_date, available_assets, **kwar
 
     return weights
 
+# Map function names to actual functions
+PORTFOLIO_FUNCTIONS = {
+    "EW": construct_equal_weight_portfolio,
+    "VW": construct_inverse_volatility_portfolio,
+    "TRACK": construct_tracking_portfolio,
+    "TRACK_PENALTY": construct_tracking_with_penalty,
+    "FIXED": construct_fixed_weight_portfolio,
+}
+
 
 
 
@@ -222,109 +233,28 @@ def construct_tracking_with_penalty(returns_up_to_date, available_assets, **kwar
 
 # Define the full list of tickers
 #tickers = ['SPY', 'IEF', 'QQQ', 'IWM', 'EEM']
-tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
-x_tickers=[ 'AGG', 'IEF', 'VMBS', 'IEI', 'LQD', 'TLT', 'TIP', 'SHY', 'EMB']
-
-#************ assert x_tickers is a subset of ticker
-# Define the start and end dates
-end_date = datetime.today()
-start_date = end_date - timedelta(days=30 * 365)
-
-# Download the adjusted closing prices for all tickers
-# price_data = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
-price_data = yf.download(tickers, start=start_date, end=end_date)['Close'] # API Changed
-
-# Calculate daily returns - *************************************   fix to account for diffrent bus days carry forward
-returns = price_data.pct_change().dropna()
-
-# Generate month-end rebalancing dates using 'ME'
-
-rebalancing_dates = returns.resample('M').last().index # ME is deprecated
-
-# Initialize a DataFrame to store portfolio weights in long format
-portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
-
-# Set half-life for exponential weighting (6 months ~ 126 trading days)
-halflife = 126
-min_periods = 60  # Minimum number of data points required
-
-# Set the lag parameter (number of business days)
-lag = 1  # Adjust as needed call it   ******** execution delay
 
 
+def get_returns_basic(tickers, start_date=None, end_date=None):
 
+    if end_date is None:
+        end_date = datetime.today()
+    if start_date is None:
+        start_date = end_date - timedelta(days=30 * 365)
 
-# Portfolio Construction
+    # Download the adjusted closing prices for all tickers
+    price_data = yf.download(tickers, start=start_date, end=end_date)['Close']
 
-# Map function names to actual functions
-portfolio_functions = {
-    "EW": construct_equal_weight_portfolio,
-    "VW": construct_inverse_volatility_portfolio,
-    "TRACK": construct_tracking_portfolio,
-    "TRACK_PENALTY": construct_tracking_with_penalty,
-    "FIXED": construct_fixed_weight_portfolio,
-}
+    # Calculate daily returns
+    # fix to account for diffrent bus days carry forward
+    returns = price_data.pct_change().dropna()
 
-# Prepare the fixed weights data
-fixed_weights_data = pd.DataFrame({
-    'date': pd.to_datetime(['2015-01-31', '2024-10-31', '2024-06-30']),
-    'MWTIX': [1, 0.5, 0.75],
-    'SHY': [0, 0.5, 0.1],
-    # Add other tickers as needed
-})
-
-# Set the date as index for easier lookup
-fixed_weights_data.set_index('date', inplace=True)
-
-
-
-# Define the portfolios using an OrderedDict
-portfolios = OrderedDict({
-    "TCW": {
-        "function_to_call": "FIXED",
-        "ticker_subset": ['MWTIX',  'SHY'],
-        "other_options": {
-            "fixed_weights_data": fixed_weights_data,
-        },
-    },
-    # Include other portfolios as before
-    "Vol_wtd_ptfl": {
-        "function_to_call": "VW",
-        "ticker_subset": x_tickers,
-        "other_options": {
-            "halflife": halflife,
-            "min_periods": min_periods,
-        },
-    },
-    "EW_ptfl": {
-        "function_to_call": "EW",
-        "ticker_subset": x_tickers,
-    },
-    "Tracking_ptfl": {
-        "function_to_call": "TRACK",
-        "ticker_subset": x_tickers,
-        "other_options": {
-            "target_portfolio_name": 'MWTIX',
-            # Initial weights will be set dynamically
-        },
-    },
-
-    "Tracking_ptfl_penalty": {  # New tracking portfolio with penalty
-        "function_to_call": "TRACK_PENALTY",
-        "ticker_subset": x_tickers,
-        "other_options": {
-            "target_portfolio_name": 'MWTIX',
-            "penalty_weight": 1e0,  # Set penalty parameter
-            # Initial weights will be set dynamically
-        },
-    },
-})
+    return returns
 
 
 def build_all_portfolios(
     returns: pd.DataFrame,
     rebalancing_dates: pd.DatetimeIndex,
-    portfolio_functions: dict,
     portfolios: OrderedDict,
     halflife: int,
     min_periods: int,
@@ -339,18 +269,18 @@ def build_all_portfolios(
     # Store previous weights for tracking portfolio
     previous_weights_tracking = None
 
-    print(f'portfolio names:  {portfolios.keys()}')
+    print(f'Building portfolios: {portfolios.keys()}')
     # Loop over each portfolio
     for portfolio_name, portfolio_info in portfolios.items():
         function_name = portfolio_info["function_to_call"]
         subset_tickers = portfolio_info["ticker_subset"]
         other_options = portfolio_info.get("other_options", {}).copy()
-        portfolio_function = portfolio_functions[function_name]
+        portfolio_function = PORTFOLIO_FUNCTIONS[function_name]
 
         # Initialize a DataFrame to store weights for this portfolio
         portfolio_weights = pd.DataFrame(index=rebalancing_dates, columns=subset_tickers, dtype=float)
 
-        print(f'running {portfolio_name=} with {len(subset_tickers)} tickers and {returns.shape} returns')
+        print(f'Running {portfolio_name=} with {len(subset_tickers)} tickers and {returns.shape} returns')
         # Loop over each rebalancing date to compute weights
         for date in rebalancing_dates:
             # Returns up to the current date
@@ -463,10 +393,16 @@ def build_all_portfolios(
     return returns, portfolio_weights_long
 
 
+tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
+returns = get_returns_basic(tickers)
+
+# Generate month-end rebalancing dates using 'M'
+rebalancing_dates = returns.resample('M').last().index
+# Initialize a DataFrame to store portfolio weights in long format
+portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
 
 portfolio_tuple = build_all_portfolios(returns,
                                        rebalancing_dates,
-                                       portfolio_functions,
                                        portfolios,
                                        halflife,
                                        min_periods,
