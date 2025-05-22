@@ -16,7 +16,7 @@ x_tickers = [ 'AGG', 'IEF', 'VMBS', 'IEI', 'LQD', 'TLT', 'TIP', 'SHY', 'EMB']
 halflife = 126 # Set half-life for exponential weighting (6 months ~ 126 trading days)
 min_periods = 60  # Minimum number of data points required
 
-portfolios = OrderedDict({
+PORTFOLIOS = OrderedDict({
     "Client": {
         "function_to_call": "FIXED",
         "ticker_subset": ['MWTIX',  'SHY'],
@@ -27,7 +27,7 @@ portfolios = OrderedDict({
     # Include other portfolios as before
     "Vol_wtd_ptfl": {
         "function_to_call": "VW",
-        "ticker_subset": x_tickers,
+        "ticker_subset": [x for x in x_tickers if x not in ['SHY']],
         "other_options": {
             "halflife": halflife,
             "min_periods": min_periods,

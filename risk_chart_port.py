@@ -3,12 +3,12 @@ from plotly.graph_objects import Figure
 from numpy import sqrt
 import pandas as pd
 
-from risk_config_port import portfolios
+from risk_config_port import PORTFOLIOS
 import plotly.express as px
 
 
 def draw_portfolio_cumret(returns: pd.DataFrame, unit=10000) -> Figure:
-    cumulative_returns = returns[portfolios.keys()].div(unit).add(1).cumprod()
+    cumulative_returns = returns[PORTFOLIOS.keys()].div(unit).add(1).cumprod()
     return px.line(cumulative_returns, template='plotly_white')
 
 
@@ -59,7 +59,7 @@ def get_portfolio_summary(returns, unit=10000):
     summary_stats_df = pd.DataFrame()
 
     # Compute summary statistics for portfolios
-    for portfolio_name in portfolios.keys():
+    for portfolio_name in PORTFOLIOS.keys():
         portfolio_cum_returns = cumulative_returns[portfolio_name]
         stats = compute_summary_stats(portfolio_cum_returns)
         summary_stats_df[portfolio_name] = stats

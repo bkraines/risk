@@ -2,7 +2,7 @@ from typing import Optional
 import streamlit as st
 import xarray as xr
 
-from risk_data import get_factor_master, get_portfolios
+from risk_data import get_factor_master, get_factor_composites
 from dashboard_interface import add_sidebar_defaults
 from risk_util import move_columns_to_front
 
@@ -19,9 +19,9 @@ def add_hyperlinks():
 def build_dashboard(factor_data: Optional[xr.Dataset] = None):
     first_columns = ['description', 'diffusion_type', 'multiplier']
     factor_master = get_factor_master(factor_data).pipe(move_columns_to_front, first_columns)
-    portfolios = get_portfolios().unstack().rename('weight').to_frame()[lambda x: x != 0].dropna()
+    composites = get_factor_composites().unstack().rename('weight').to_frame()[lambda x: x != 0].dropna()
     
-    st.dataframe(portfolios, height=500)
+    st.dataframe(composites, height=500)
     st.dataframe(factor_master, height=3000)
     add_hyperlinks()
     add_sidebar_defaults()

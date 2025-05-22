@@ -9,7 +9,7 @@ from scipy.optimize import minimize
 
 import yfinance as yf
 
-from risk_config_port import halflife, min_periods, portfolios
+from risk_config_port import halflife, min_periods, PORTFOLIOS
 from risk_chart_port import draw_portfolio_cumret, draw_portfolio_weights, get_portfolio_summary
 
 
@@ -390,7 +390,7 @@ def main()-> None:
     # Initialize a DataFrame to store portfolio weights in long format
     portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
 
-    portfolio_tuple = build_all_portfolios(portfolios, returns, rebalancing_dates)
+    portfolio_tuple = build_all_portfolios(PORTFOLIOS, returns, rebalancing_dates)
     returns, portfolio_weights_long = portfolio_tuple
 
     draw_portfolio_cumret(returns, unit=1).show()
