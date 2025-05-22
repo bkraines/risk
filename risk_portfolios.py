@@ -3,12 +3,12 @@ from typing import Optional
 import pandas as pd
 import numpy as np
 import yfinance as yf
-import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from collections import OrderedDict
 from scipy.optimize import minimize
 
 from risk_config_port import halflife, min_periods, portfolios
+from risk_chart_port import draw_portfolio_cumret, draw_portfolio_weights, get_portfolio_summary
 
 
 
@@ -378,7 +378,6 @@ def build_all_portfolios(portfolios: OrderedDict,
         
     return returns, portfolio_weights_long
 
-
 def main()-> None:
     tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
     returns = get_returns_basic(tickers)
@@ -391,73 +390,10 @@ def main()-> None:
     portfolio_tuple = build_all_portfolios(portfolios, returns, rebalancing_dates)
     returns, portfolio_weights_long = portfolio_tuple
 
+    draw_portfolio_cumret(returns, unit=1).show()
+    draw_portfolio_weights(portfolio_weights_long).show()
+    print(get_portfolio_summary(returns, unit=1))
+
 
 if __name__ == "__main__":
     main()
-
-# # Update the list of tickers with portfolio names
-# all_tickers_with_portfolios = tickers.copy()
-# for portfolio_name in portfolios.keys():
-#     if portfolio_name in all_tickers_with_portfolios:
-#         all_tickers_with_portfolios.remove(portfolio_name)
-#     all_tickers_with_portfolios.append(portfolio_name)
-
-# # Compute cumulative returns for all assets and portfolios
-# cumulative_returns = (1 + returns).cumprod()
-
-# # Define function to compute summary statistics
-# def compute_summary_stats(series):
-#     """
-#     Computes summary statistics for a given time series of cumulative returns.
-#     """
-#     total_period_in_years = (series.index[-1] - series.index[0]).days / 365.25
-#     cumulative_return = series.iloc[-1] - 1  # cumulative_return over the period
-#     annualized_return = series.iloc[-1] ** (1 / total_period_in_years) - 1
-#     # For annualized volatility, use daily returns
-#     daily_returns = series.pct_change().dropna()
-#     annualized_volatility = daily_returns.std() * np.sqrt(252)
-#     sharpe_ratio = annualized_return / annualized_volatility
-#     return pd.Series({
-#         'Cumulative Return': cumulative_return,
-#         'Annualized Return': annualized_return,
-#         'Annualized Volatility': annualized_volatility,
-#         'Sharpe Ratio': sharpe_ratio
-#     })
-
-# # Initialize summary stats DataFrame
-# summary_stats_df = pd.DataFrame()
-
-# # Compute summary statistics for portfolios
-# for portfolio_name in portfolios.keys():
-#     portfolio_cum_returns = cumulative_returns[portfolio_name]
-#     stats = compute_summary_stats(portfolio_cum_returns)
-#     summary_stats_df[portfolio_name] = stats
-
-# # Transpose for better readability
-# summary_stats_df = summary_stats_df.T
-
-# # Display summary statistics
-# print("Summary Statistics for Portfolios:")
-# print(summary_stats_df)
-# print()
-
-# # Plot cumulative returns for portfolios using Plotly
-# fig = go.Figure()
-
-# for portfolio_name in portfolios.keys():
-#     fig.add_trace(go.Scatter(
-#         x=cumulative_returns.index,
-#         y=cumulative_returns[portfolio_name],
-#         mode='lines',
-#         name=portfolio_name
-#     ))
-
-# fig.update_layout(
-#     title='Cumulative Returns of Portfolios',
-#     xaxis_title='Date',
-#     yaxis_title='Cumulative Return',
-#     legend_title='Portfolio',
-#     template='plotly_white'
-# )
-
-# fig.show()
