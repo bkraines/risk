@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from collections import OrderedDict
 from scipy.optimize import minimize
 
-from risk_config_port import fixed_weights_data, halflife, lag, min_periods, portfolios
+from risk_config_port import halflife, min_periods, portfolios
 
 
 
@@ -226,16 +226,7 @@ PORTFOLIO_FUNCTIONS = {
 }
 
 
-
-
-# INITIALIZATION
-
-
-# Define the full list of tickers
-#tickers = ['SPY', 'IEF', 'QQQ', 'IWM', 'EEM']
-
-
-def get_returns_basic(tickers, start_date=None, end_date=None):
+def get_returns_basic(tickers, start_date=None, end_date=None) -> pd.DataFrame:
 
     if end_date is None:
         end_date = datetime.today()
@@ -252,16 +243,14 @@ def get_returns_basic(tickers, start_date=None, end_date=None):
     return returns
 
 
-def build_all_portfolios(
-    returns: pd.DataFrame,
-    rebalancing_dates: pd.DatetimeIndex,
-    portfolios: OrderedDict,
-    halflife: int,
-    min_periods: int,
-    lag: int,
-    fixed_weights_data: Optional[pd.DataFrame] = None,
-    portfolio_weights_long: Optional[pd.DataFrame] = None,
-) -> tuple[dict[str, pd.Series], pd.DataFrame, pd.DataFrame]:
+def build_all_portfolios(portfolios: OrderedDict,
+                         returns: pd.DataFrame,
+                         rebalancing_dates: pd.DatetimeIndex,
+                         lag: Optional[int] = 1,
+                         ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    
+    # Initialize a DataFrame to store portfolio weights in long format
+    portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
     
     # Initialize a dictionary to store portfolio returns
     portfolio_returns_dict = {}
@@ -353,9 +342,6 @@ def build_all_portfolios(
             if not weights_long.empty and weights_long.notna().any().any():
                 portfolio_weights_long = pd.concat([portfolio_weights_long, weights_long], ignore_index=True)
 
-        # Set the lag parameter (number of business days)
-        #lag = 1  # Adjust as needed
-
         # Expand weights to daily frequency by forward-filling
         daily_weights = portfolio_weights.reindex(returns.index).ffill().infer_objects(copy=False)
 
@@ -393,27 +379,21 @@ def build_all_portfolios(
     return returns, portfolio_weights_long
 
 
-tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
-returns = get_returns_basic(tickers)
+def main()-> None:
+    tickers = [ 'MWTIX', 'SPY', 'IWM', 'MDY', 'RSP', 'QQQ', 'XLK', 'XLI', 'XLF', 'XLC', 'XLE', 'XLY', 'XLB', 'XLV', 'XLU', 'XLP', 'VNQ', 'AIQ', 'ICLN', 'PFF', 'FEZ', 'EEM', 'FXI', 'ASHR',  'LQD', 'HYG', 'LQDH', 'HYGH', 'AGG',  'SHY', 'IEI', 'IEF', 'TLT', 'TIP', 'VTIP', 'AGNC', 'VMBS', 'CMBS', 'EMB', 'EMHY', 'GLD', 'SLV', 'USO', 'DBC', 'UUP', 'FXE', 'FXY' ]
+    returns = get_returns_basic(tickers)
 
-# Generate month-end rebalancing dates using 'M'
-rebalancing_dates = returns.resample('M').last().index
-# Initialize a DataFrame to store portfolio weights in long format
-portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
+    # Generate month-end rebalancing dates using 'M'
+    rebalancing_dates = returns.resample('M').last().index
+    # Initialize a DataFrame to store portfolio weights in long format
+    portfolio_weights_long = pd.DataFrame(columns=["portfolio_name", "date", "ticker", "weight"])
 
-portfolio_tuple = build_all_portfolios(returns,
-                                       rebalancing_dates,
-                                       portfolios,
-                                       halflife,
-                                       min_periods,
-                                       lag,
-                                       fixed_weights_data,
-                                       portfolio_weights_long
-                                       )
-returns, portfolio_weights_long = portfolio_tuple
+    portfolio_tuple = build_all_portfolios(portfolios, returns, rebalancing_dates)
+    returns, portfolio_weights_long = portfolio_tuple
 
 
-
+if __name__ == "__main__":
+    main()
 
 # # Update the list of tickers with portfolio names
 # all_tickers_with_portfolios = tickers.copy()
