@@ -714,15 +714,14 @@ def add_regime_shading(
     - Shading is only applied for non-NaN regime blocks.
 
     """
-    # TODO: The method `add_vrect` covers the interval [x0, x1).
-    #       Consider adding a day to the final interval.
+    # TODO: Shading ends at the final date marker, which may not be chart's right edge
+    #       (e.g. shading in `px.bar` charts with `barmode="group"` stops at the center of the final bar group)
     if regimes.empty:
         return fig
 
     if color_map is None:
         color_map = get_color_map(regimes)
     default_color = f'rgba(128, 128, 128, 0.2)'
-    
     regime_blocks = (regimes
                      .ffill()
                      .to_frame(name='regime')
@@ -732,12 +731,13 @@ def add_regime_shading(
     for (group, regime), block in regime_blocks.groupby(['group', 'regime']):
         if pd.isna(regime):
             continue
-        start_date = block.index[0]
-        end_date = block.index[-1]
-        # Draw the rectangle to the next valid date 
-        # (e.g. don't end on a Friday, stretch to Monday)
-        end_date_next = (date_list[date_list > end_date].min() 
-                         if date_list.max() > end_date else date_list.max())
+        start_date = block.index.min()
+        end_date = block.index.max()
+        # Draw the rectangle to the next valid date (don't end on a Friday, stretch to Monday)
+        # TODO: If it's the last block, ensure coverage to chart edge
+        end_date_next = (date_list[date_list > end_date].min()
+                         if date_list.max() > end_date
+                         else date_list.max()) # + pd.DateOffset(years=1)) # doesn't work
         color = color_map.get(regime, default_color)
         fig.add_vrect(
             x0=start_date,
