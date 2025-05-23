@@ -1,11 +1,11 @@
-from typing import List, Optional, TypeVar, Literal, Callable
+from typing import List, Optional, TypeVar, Literal
 from collections.abc import Mapping
 
 from numpy import sqrt, nan
 import pandas as pd
 import xarray as xr
 
-from risk_util import xr_pct_change
+from risk_config import REGIME_DICT
 
 
 def fill_returns(df):
@@ -219,3 +219,17 @@ def get_days_ma_set(cret: xr.DataArray, vol: xr.DataArray, windows: List[int]) -
                      dim=pd.Index(windows, name='ma_type'))
 
 
+def get_vix_regime(cret: xr.DataArray, 
+                   factor_name='^VIX3M', 
+                   bins=REGIME_DICT['vix']['bins'], 
+                   labels=REGIME_DICT['vix']['labels']
+                   ) -> pd.Series:
+    # TODO: Generalize to other regimes
+    vix = cret.sel(factor_name=factor_name).to_series().dropna()
+    vix_regime = pd.cut(vix,
+                        bins=bins,
+                        labels=labels,
+                        right=False,  # left-closed: [a, b)
+                        include_lowest=True  # include 0 in the first bin
+                        )
+    return vix_regime

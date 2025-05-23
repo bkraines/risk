@@ -1,6 +1,8 @@
 from typing import Literal
 from datetime import datetime
 
+from numpy import inf
+
 IMAGE_DIR = 'images'
 CACHE_DIR = 'cache'
 CACHE_FILENAME = 'factor_data.zarr'
@@ -21,6 +23,13 @@ else:
 COV_TYPES = {str(h): {'vol_type': h,
                       'corr_type': h}
              for h in HALFLIFES}
+
+
+# TODO: Pack REGIME_DICT into get_vix_regime call
+REGIME_DICT = {'vix': {'bins': [0, 25, 40, inf],
+                       'labels': ['vix_lo', 'vix_mid', 'vix_hi']}
+               }
+
 
 ROLLING_WINDOWS: dict[str, int] = {
     "1d": 1,
@@ -66,3 +75,4 @@ HISTORICAL_WINDOWS: dict[str, tuple[datetime, datetime]] = {
     "ARK Mania":         (datetime(2020, 4, 1), datetime(2021, 2, 12)),
     "Tech Wreck (2022)": (datetime(2022, 1, 1), datetime(2022, 10, 15)),
 } 
+
