@@ -7,7 +7,7 @@ import yfinance as yf
 
 from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
 from risk_dates import business_days_ago #, latest_business_day
-from risk_util import xr_pct_change, safe_reindex, cache
+from risk_util import xr_pct_change, safe_reindex, cache, convert_df_to_json
 from risk_stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from risk_config_port import PORTFOLIOS
 from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
@@ -206,8 +206,8 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     factor_data['factor_name'].attrs = factor_master.T.to_dict()
     if not factor_list_portfolios.empty:
         factor_data['portfolio_weights'] = portfolio_weights_to_xarray(portfolio_weights_long)
-        # FIXME: Zarr only accepts JSON-serializable attributes, but `portfolios` contains a pd.DataFrame:
-        # factor_data['portfolio_name'].attrs = portfolios
+        # Zarr only accepts JSON-serializable attributes, but `portfolios` contains a pd.DataFrame:
+        factor_data['portfolio_name'].attrs = convert_df_to_json(portfolios)
     print('Factor construction complete')
     return factor_data #, diffusion_map, levels_latest
 
