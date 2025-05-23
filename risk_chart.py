@@ -711,11 +711,6 @@ def add_regime_shading(
     - Shading is only applied for non-NaN regime blocks.
 
     """
-    # TODO: Adjust the x1 parameter (currently using end_date directly) 
-    #       in add_vrect to properly cover the full period of end_date
-    #       (e.g., by using an offset like next business day, month end, or inferred frequency).
-    #       Using x1=end_date may not shade the end_date's interval fully 
-    #       and makes single-point blocks invisible.
     if regimes.empty:
         return fig
 
@@ -728,16 +723,20 @@ def add_regime_shading(
                      .to_frame(name='regime')
                      .assign(group=(lambda df: (df['regime'] != df['regime'].shift()).cumsum()))
                      )
-    
+    date_list = regimes.index
     for (group, regime), block in regime_blocks.groupby(['group', 'regime']):
         if pd.isna(regime):
             continue
         start_date = block.index[0]
-        end_date = block.index[-1] 
+        end_date = block.index[-1]
+        # Draw the rectangle to the next valid date 
+        # (e.g. don't end on a Friday, stretch to Monday)
+        end_date_next = (date_list[date_list > end_date].min() 
+                         if date_list.max() > end_date else date_list.max())
         color = color_map.get(regime, default_color)
         fig.add_vrect(
             x0=start_date,
-            x1=end_date,
+            x1=end_date_next,
             fillcolor=color,
             # opacity=1.0.
             layer='below',
