@@ -27,6 +27,8 @@ def draw_portfolio_cret(cret: xr.DataArray, portfolio_names: Optional[Iterable] 
 
 
 def draw_portfolio_weights(portfolio_weights: pd.DataFrame | xr.DataArray) -> Figure:
+    # TODO: Use plotly graph objects subplots to create facets independently
+    #       allowing for y-coordinate set to vary with facet
     if isinstance(portfolio_weights, pd.DataFrame):
         da = portfolio_weights_to_xarray(portfolio_weights)
     else:

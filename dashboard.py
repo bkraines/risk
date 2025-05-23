@@ -16,6 +16,7 @@ from dashboard_volfitness  import build_dashboard as vol_fitness
 from dashboard_portfolios  import build_dashboard as portfolios
 from dashboard_master      import build_dashboard as master
 
+# TODO: Update streamlit `[theme]` section of `.streamlit/config.toml` file to match `plotly_white` colors
 
 factor_data = get_factor_data()
 
