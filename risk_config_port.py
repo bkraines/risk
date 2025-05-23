@@ -13,6 +13,7 @@ fixed_weights_data = pd.DataFrame(
 
 # TODO: Assert x_tickers is subset of tickers
 x_tickers = [ 'AGG', 'IEF', 'VMBS', 'IEI', 'LQD', 'TLT', 'TIP', 'SHY', 'EMB']
+x_tickers_risk_parity = ['SPY', 'FEZ', '^N225', 'LQDH', 'HYGH', 'EMB', 'IEI', 'IEF', 'TLT', 'FXE', 'FXY', 'FXF', 'TIP', 'VMBS', 'CMBS', 'GLD', 'USO']
 halflife = 126 # Set half-life for exponential weighting (6 months ~ 126 trading days)
 min_periods = 60  # Minimum number of data points required
 
@@ -27,7 +28,8 @@ PORTFOLIOS = OrderedDict({
     # Include other portfolios as before
     "Vol_wtd_ptfl": {
         "function_to_call": "VW",
-        "ticker_subset": [x for x in x_tickers if x not in ['SHY']],
+        # "ticker_subset": [x for x in x_tickers if x not in ['SHY']],
+        "ticker_subset": x_tickers_risk_parity,
         "other_options": {
             "halflife": halflife,
             "min_periods": min_periods,
