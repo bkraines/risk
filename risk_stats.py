@@ -220,7 +220,7 @@ def get_days_ma_set(cret: xr.DataArray, vol: xr.DataArray, windows: List[int]) -
 
 
 def get_vix_regime(cret: xr.DataArray, 
-                   factor_name='^VIX3M', 
+                   factor_name='^VIX', 
                    bins=REGIME_DICT['vix']['bins'], 
                    labels=REGIME_DICT['vix']['labels']
                    ) -> pd.Series:

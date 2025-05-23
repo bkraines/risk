@@ -26,7 +26,7 @@ COV_TYPES = {str(h): {'vol_type': h,
 
 
 # TODO: Pack REGIME_DICT into get_vix_regime call
-REGIME_DICT = {'vix': {'bins': [0, 25, 40, inf],
+REGIME_DICT = {'vix': {'bins': [0, 15, 30, inf], #[0, 25, 40, inf],
                        'labels': ['vix_lo', 'vix_mid', 'vix_hi']}
                }
 
@@ -75,4 +75,9 @@ HISTORICAL_WINDOWS: dict[str, tuple[datetime, datetime]] = {
     "ARK Mania":         (datetime(2020, 4, 1), datetime(2021, 2, 12)),
     "Tech Wreck (2022)": (datetime(2022, 1, 1), datetime(2022, 10, 15)),
 } 
+VIX_COLORS = {
+    'vix_lo':  'rgba(200, 255, 200, 0.2)',
+    'vix_mid': 'rgba(255, 255, 150, 0.2)',
+    'vix_hi':  'rgba(255, 150, 150, 0.2)'
+}
 

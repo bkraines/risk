@@ -14,7 +14,7 @@ import plotly.colors as pc
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-from risk_config import IMAGE_DIR
+from risk_config import IMAGE_DIR, VIX_COLORS
 from risk_data import get_factor_master
 from risk_stats import get_beta_pair, get_zscore
 
@@ -683,17 +683,11 @@ def get_color_map(categories: pd.Series) -> dict:
     return color_map
 
 
-VIX_COLORS = {
-    'vix_lo':  'rgba(200, 255, 200, 0.2)',
-    'vix_mid': 'rgba(255, 255, 150, 0.2)',
-    'vix_hi':  'rgba(255, 150, 150, 0.2)'
-}
-
 def add_regime_shading(
-    fig: go.Figure, 
+    fig: Figure, 
     regimes: pd.Series, 
     color_map: Optional[dict] = VIX_COLORS
-) -> go.Figure:
+) -> Figure:
     """
     Adds shaded regions to a Plotly figure based on a regime time series.
 
