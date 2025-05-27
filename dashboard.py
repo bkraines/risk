@@ -15,10 +15,13 @@ from dashboard_monitor     import build_dashboard as monitor
 from dashboard_volfitness  import build_dashboard as vol_fitness
 from dashboard_portfolios  import build_dashboard as portfolios
 from dashboard_master      import build_dashboard as master
+from dashboard_regime      import build_dashboard as regime
 
 # TODO: Update streamlit `[theme]` section of `.streamlit/config.toml` file to match `plotly_white` colors
 
+# st.write('Start factor construction')
 factor_data = get_factor_data()
+# st.write('End factor construction')
 
 pg = st.navigation([
                     st.Page(lambda: time_series(factor_data), 
@@ -45,6 +48,10 @@ pg = st.navigation([
                             title='Vol Fitness',
                             url_path='vol_fitness'),
 
+                    st.Page(lambda: regime(factor_data),
+                            title='Regimes',
+                            url_path='regimes'),
+                    
                     st.Page(lambda: portfolios(factor_data),
                             title='Portfolios',
                             url_path='portfolios'),
@@ -52,6 +59,7 @@ pg = st.navigation([
                     st.Page(lambda: master(factor_data),
                             title='Factor Master',
                             url_path='factor_master'),
+
                     ])
 
 # add_sidebar_defaults()

@@ -235,12 +235,25 @@ def get_vix_regime(cret: xr.DataArray,
     return vix_regime
 
 
-def summarize(df, rfr=0.0, percentiles: Optional[list[float]]=[0.05, 0.5, 0.85], freq=252):
+def summarize(df, 
+              percentiles: Optional[list[float]]=[0.05, 0.5, 0.85], 
+              factor_corr: Optional[pd.DataFrame]=None, 
+              rfr=0.0, 
+              freq=252):
     """Summarize a DataFrame of returns."""
+    # TODO: Take DataArray of cret instead of DataFrame of ret
+    # TODO: Calculate correlation on 5-day returns
     # TODO: Pass in list of outputs to include
     ann_mean = df.mean() * freq
     ann_std  = df.std() * sqrt(freq)
     
+    # Compute correlation
+    if factor_corr is None:
+        corr = pd.DataFrame()
+    else:
+        # corr = df.corrwith(factor_corr)
+        corr = df.corrwith(factor_corr).rename(f'corr {factor_corr.name}').to_frame().T
+        
     # Compute quantiles
     if percentiles is None:
         quantiles = pd.DataFrame()
@@ -252,6 +265,7 @@ def summarize(df, rfr=0.0, percentiles: Optional[list[float]]=[0.05, 0.5, 0.85],
         'sharpe':     (ann_mean - rfr) / ann_std,
         'mean':       ann_mean,
         'std':        ann_std,
+        **corr.T.to_dict(),
         # 'skew':       df.skew(),
         # 'kurtosis':   df.kurtosis(),
         # 'min':        df.min(),
@@ -269,8 +283,11 @@ def summarize(df, rfr=0.0, percentiles: Optional[list[float]]=[0.05, 0.5, 0.85],
     )
     return summary
 
+
 def summarize_regime(df, groups=None, include_total=True, **kwargs):
     """Summarize returns by regime, optionally including total."""
+    # TODO: Align regimes before summarizing
+    # TODO: Loop through multiple regime groups
 
     summary = (df
                .groupby(groups, observed=True)
@@ -278,13 +295,14 @@ def summarize_regime(df, groups=None, include_total=True, **kwargs):
 
     if include_total:
         total_summary = summarize(df, **kwargs)
-        # Align with the multiindex: (statistic, regime)
+        # Align with the MultiIndex: (regime, statistic)
         total_summary.index = pd.MultiIndex.from_product(
             [['Total'], total_summary.index],
         )
-        summary = pd.concat([summary, total_summary]).sort_index()
+        summary = pd.concat([summary, total_summary])
 
-    statistics_name = summary.index.names[0]
+    # Inherit statistics index name from parent function
+    statistics_name = summary.index.names[1]
     return (summary
             .rename_axis(['regime', statistics_name])
             .reorder_levels([statistics_name, 'regime'])

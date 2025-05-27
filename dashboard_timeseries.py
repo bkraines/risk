@@ -2,7 +2,7 @@ import streamlit as st
 
 from risk_config import HALFLIFES, VIX_COLORS
 from risk_util import remove_items_from_list
-from risk_stats import get_dist_ma_set, get_days_ma_set, get_vix_regime
+from risk_stats import get_dist_ma_set, get_days_ma_set, get_vix_regime, summarize_regime
 from risk_data import get_factor_data
 from risk_chart import draw_volatility, draw_correlation, draw_cumulative_return, draw_volatility_ratio, draw_beta, draw_returns, draw_zscore, draw_distance_from_ma, draw_days_from_ma, draw_zscore_qq, add_regime_shading
 from dashboard_interface import add_sidebar_defaults, select_date_window
@@ -62,6 +62,11 @@ def build_dashboard(factor_data):
 
     for fig in figs.values():
         st.plotly_chart(fig)
+
+    if regime_shading:
+        ret = factor_data.ret.sel(factor_name=[factor_1, factor_2]).to_pandas()
+        summary = summarize_regime(ret, groups=vix_regime)
+        st.dataframe(summary)
 
     add_sidebar_defaults()
 
