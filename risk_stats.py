@@ -233,3 +233,83 @@ def get_vix_regime(cret: xr.DataArray,
                         include_lowest=True  # include 0 in the first bin
                         )
     return vix_regime
+
+
+def summarize(df, rfr=0.0, percentiles: Optional[list[float]]=[0.05, 0.5, 0.85], freq=252):
+    """Summarize a DataFrame of returns."""
+    # TODO: Pass in list of outputs to include
+    ann_mean = df.mean() * freq
+    ann_std  = df.std() * sqrt(freq)
+    
+    # Compute quantiles
+    if percentiles is None:
+        quantiles = pd.DataFrame()
+    else:
+        quantiles = df.quantile(percentiles)
+        quantiles.index = [f"p{int(p * 100):02d}" for p in percentiles]
+    
+    stats = {
+        'sharpe':     (ann_mean - rfr) / ann_std,
+        'mean':       ann_mean,
+        'std':        ann_std,
+        # 'skew':       df.skew(),
+        # 'kurtosis':   df.kurtosis(),
+        # 'min':        df.min(),
+        **quantiles.T.to_dict(),
+        # 'max':        df.max(),
+        'count':      df.count(),
+    }
+    
+    summary = pd.DataFrame(stats).T
+    summary.index = pd.CategoricalIndex(
+        summary.index, 
+        categories=list(stats.keys()), 
+        ordered=True,
+        name='statistic'
+    )
+    return summary
+
+def summarize_regime(df, groups=None, include_total=True, **kwargs):
+    """Summarize returns by regime, optionally including total."""
+
+    summary = (df
+               .groupby(groups, observed=True)
+               .apply(summarize, **kwargs))
+
+    if include_total:
+        total_summary = summarize(df, **kwargs)
+        # Align with the multiindex: (statistic, regime)
+        total_summary.index = pd.MultiIndex.from_product(
+            [['Total'], total_summary.index],
+        )
+        summary = pd.concat([summary, total_summary]).sort_index()
+
+    statistics_name = summary.index.names[0]
+    return (summary
+            .rename_axis(['regime', statistics_name])
+            .reorder_levels([statistics_name, 'regime'])
+            .sort_index())
+    
+  
+# import numpy as np
+# def summarize_walrus(df):
+#     # Keeping this just for the notable use of the `:=` walrus operator
+#     return (
+#         pd.concat(
+#             stats := {'count': df.count(),
+#                       'mean': df.mean() * 252,
+#                       'std': df.std() * sqrt(252),
+#                       'sharpe': pd.Series(
+#                               np.where(df.std() != 0, (df.mean() / df.std()) * sqrt(252), np.nan),
+#                           index=df.columns
+#                       ),
+#                       'min': df.min(),
+#                       'max': df.max()
+#                       }, axis=1)
+#         .T
+#         .set_index(pd.CategoricalIndex(stats.keys(), 
+#                                        categories=stats.keys(), 
+#                                        ordered=True)
+#         )
+#         .sort_index()
+#     )
