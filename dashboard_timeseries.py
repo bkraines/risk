@@ -16,10 +16,13 @@ def build_dashboard(factor_data):
         col1, col2 = st.columns([1, 1])
         factor_1 = col1.selectbox('Factor 1', options=factor_list, index=0)
         factor_2 = col2.selectbox('Factor 2', options=factor_list, index=1)
+        
         start_date, end_date = select_date_window(factor_data.indexes['date'], default_window_name='1y')
         regime_shading = st.toggle('VIX Regime Shading', value=False)
-        vol_type = st.selectbox('Volatility Halflife for Z-Score', options=HALFLIFES, index=0)
-        ma_type: int = st.number_input("Moving Average Window", value=200, min_value=1, step=1, format="%d")
+        
+        col3, col4 = st.columns([1, 1])
+        vol_type = col3.selectbox('Volatility Halflife', options=HALFLIFES, index=0)
+        ma_type: int = col4.number_input("Moving Average Window", value=200, min_value=1, step=20, format="%d")
     
     # Moving average must be computed before the date sliced
     # Can compute here or in `get_factor_data`
