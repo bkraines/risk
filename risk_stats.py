@@ -263,8 +263,8 @@ def summarize(df,
     
     stats = {
         'sharpe':     (ann_mean - rfr) / ann_std,
-        'mean':       ann_mean,
-        'std':        ann_std,
+        'mean':       df.mean(),
+        'std':        df.std(),
         **corr.T.to_dict(),
         # 'skew':       df.skew(),
         # 'kurtosis':   df.kurtosis(),

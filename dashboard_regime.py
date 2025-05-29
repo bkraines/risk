@@ -25,7 +25,7 @@ def build_dashboard(factor_data):
     corr_factor_ret = ds.ret.sel(factor_name=corr_factor_name).to_pandas().rename(corr_factor_name)
     summary = summarize_regime(ret, groups=vix_regime, factor_corr=corr_factor_ret)
     st.write(f"VIX Regime Summary from {ret.index.min():%Y-%m-%d} to {ret.index.max():%Y-%m-%d}")
-    st.dataframe(summary)
+    st.dataframe(summary, height=800)
 
     add_sidebar_defaults()
 
