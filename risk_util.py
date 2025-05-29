@@ -1,4 +1,4 @@
-from typing import Callable, Any, List, Literal, Optional
+from typing import Callable, Any, Hashable, List, Literal, Optional
 
 import os 
 from io import StringIO
@@ -373,6 +373,13 @@ def is_sorted(date_list):
     # TODO: Find better solution than using `is_sorted` everywhere
     return all(date_list[i] <= date_list[i+1] for i in range(len(date_list)-1))
 
+def has_no_duplicates(lst: list[Hashable]) -> bool:
+    return len(lst) == len(set(lst))
+
+def remove_items_from_list(list_to_filter, list_to_exclude):
+    set_to_exclude = set(list_to_exclude)
+    return [item for item in list_to_filter if item not in set_to_exclude]
+
 
 def convert_df_to_json(obj: Any) -> Any:
     """
@@ -461,6 +468,7 @@ def restore_df_from_json(obj: Any) -> Any:
         return obj
     
     
-def remove_items_from_list(list_to_filter, list_to_exclude):
-    set_to_exclude = set(list_to_exclude)
-    return [item for item in list_to_filter if item not in set_to_exclude]
+
+
+def flatten_multiindex(index, sep='_'):
+    return index.map(lambda x: sep.join(map(str, x)))

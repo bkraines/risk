@@ -26,7 +26,7 @@ COV_TYPES = {str(h): {'vol_type': h,
 
 
 # TODO: Pack REGIME_DICT into get_vix_regime call
-REGIME_DICT = {'vix': {'bins': [0, 15, 30, inf], #[0, 25, 40, inf],
+REGIME_DICT = {'vix': {'bins': [0, 16, 30, inf], #[0, 25, 40, inf],
                        'labels': ['vix_lo', 'vix_mid', 'vix_hi']}
                }
 
@@ -81,3 +81,19 @@ VIX_COLORS = {
     'vix_hi':  'rgba(255, 150, 150, 0.2)'
 }
 
+EVENT_PAIRS = {
+    'hi_spy':     [('SPY',  '2018-01-26'),  # Align SPY peak
+                   ('SPY',  '2025-02-19')],
+    'jan_1':      [('^VIX', '2018-01-01'),  # Start Jan 1
+                   ('^VIX', '2025-01-01')],
+    'hi_vix':     [('^VIX', '2018-02-04'), # Align VIX peak
+                   ('^VIX', '2025-04-08')],
+    'hi_vix2':    [('^VIX', '2018-01-31'), # Align VIX peak, 1w prior (vix selloff)
+                   ('^VIX', '2025-04-01')],
+    'hi_vix_spy': [('SPY',  '2018-01-28'), # Align VIX peak 1w prior (SPY)
+                   ('SPY',  '2025-04-01')],
+    'hi_vix3':    [('SPY',  '2018-01-24'), # Align first VIX selloff
+                   ('SPY',  '2025-02-15')],
+    'test':       [('RSP',  '2025-05-27'), 
+                   ('IWM',  '2025-05-09')],
+}

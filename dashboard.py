@@ -16,6 +16,7 @@ from dashboard_volfitness  import build_dashboard as vol_fitness
 from dashboard_portfolios  import build_dashboard as portfolios
 from dashboard_master      import build_dashboard as master
 from dashboard_regime      import build_dashboard as regime
+from dashboard_event_study import build_dashboard as event_study
 
 # TODO: Update streamlit `[theme]` section of `.streamlit/config.toml` file to match `plotly_white` colors
 
@@ -39,6 +40,10 @@ pg = st.navigation([
                     st.Page(lambda: mds(factor_data),
                             title='Correlation Projection',
                             url_path='correlation'),
+
+                    st.Page(lambda: event_study(factor_data),
+                            title='Event Study',
+                            url_path='event_study'),
 
                     st.Page(lambda: monitor(factor_data),
                             title='Performance',
