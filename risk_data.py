@@ -184,12 +184,12 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
         # ret_list.append(portfolios_ret)
         factor_returns = pd.concat([factor_returns, composite_ret], axis=1)
     
-    
+    if False: # Commenting out for Heroku testing
     # Get portfolio returns:
     # `Portfolios` are those portfolios defined in risk_config_port.py
     factor_list_portfolios = factor_master.query("source=='portfolio'").index
     print(f'Building {len(factor_list_portfolios)} portfolio factors')
-    if not factor_list_portfolios.empty:
+    if not factor_list_portfolios.empty and False: # Commenting out for Heroku testing
         rebalancing_dates = factor_returns.resample('M').last().index
         portfolio_returns, portfolio_weights_long = build_all_portfolios(portfolios, factor_returns, rebalancing_dates)
         factor_returns = pd.concat([factor_returns, portfolio_returns[factor_list_portfolios]], axis=1)
