@@ -184,7 +184,6 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
         # ret_list.append(portfolios_ret)
         factor_returns = pd.concat([factor_returns, composite_ret], axis=1)
     
-    if False: # Commenting out for Heroku testing
     # Get portfolio returns:
     # `Portfolios` are those portfolios defined in risk_config_port.py
     factor_list_portfolios = factor_master.query("source=='portfolio'").index
