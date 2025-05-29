@@ -17,8 +17,9 @@ def build_dashboard(factor_data):
     with st.sidebar:
         corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)
         return_start, return_end = select_date_window(factor_data.indexes['date'], default_window_name='MTD')
-        vol_type     = st.selectbox('Volatility Halflife', options=model_options, index=model_default)
-        corr_type    = st.selectbox('Correlation Halflife', options=model_options, index=model_default)
+        col1, col2 = st.columns([1, 1])
+        vol_type     = col1.selectbox('Volatility Halflife', options=model_options, index=model_default)
+        corr_type    = col2.selectbox('Correlation Halflife', options=model_options, index=model_default)
 
     return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
     fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)

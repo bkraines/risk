@@ -14,10 +14,15 @@ def build_dashboard(factor_data: xr.Dataset) -> None:
     factor_list = factor_data['factor_name'].values
     with st.sidebar:
         # TODO: Allow selection of arbitrary number of factors
-        factor_1   = st.selectbox('Factor 1', options=factor_list, index=0)
-        vol_type_1 = st.selectbox('Volatility 1', options=HALFLIFES, index=1)
-        factor_2   = st.selectbox('Factor 2', options=factor_list, index=1)
-        vol_type_2 = st.selectbox('Volatility 2', options=HALFLIFES, index=1)
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            factor_1   = st.selectbox('Factor 1', options=factor_list, index=0)
+        with col2:
+            vol_type_1 = st.selectbox('Volatility 1', options=HALFLIFES, index=1)
+        with col1:
+            factor_2   = st.selectbox('Factor 2', options=factor_list, index=1)
+        with col2:
+            vol_type_2 = st.selectbox('Volatility 2', options=HALFLIFES, index=1)
         start_date, end_date = select_date_window(factor_data.indexes['date'], default_window_name='max')
     
     qq_series: list[tuple[str, Any]] = [(factor_1, vol_type_1), 

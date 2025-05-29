@@ -18,8 +18,9 @@ def build_dashboard(factor_data):
     with st.sidebar:
         factor = st.selectbox('Factor', options=factor_list, index=0)
         start_date, end_date = select_date_window(factor_data.indexes['date'], default_window_name='15y')
-        corr_type = st.selectbox('Correlation Halflife', options=HALFLIFES, index=corr_index)
-        change = st.number_input('Correlation Change (days)', min_value=1, value=21)
+        col1, col2 = st.columns([1, 1])
+        corr_type = col1.selectbox('Halflife (days)', options=HALFLIFES, index=corr_index)
+        change    = col2.number_input('Change (days)', min_value=1, value=21)
 
     fig1 = draw_correlation_heatmap(factor_data.corr.sel(date=slice(start_date, end_date)), 
                                    fixed_factor=factor, 

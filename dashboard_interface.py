@@ -113,14 +113,15 @@ def select_date_window(
         st.session_state.custom_end_date = end_date
     else:
         # Select custom date range
-        start_date = st.date_input("Start date", 
-                                   value=st.session_state.custom_start_date, 
-                                   min_value=earliest_date, 
-                                   max_value=latest_date)
-        end_date   = st.date_input("End date", 
-                                   value=st.session_state.custom_end_date, 
-                                   min_value=start_date if start_date else earliest_date, 
-                                   max_value=latest_date)
+        col1, col2 = st.columns([1, 1])
+        start_date = col1.date_input("Start date", 
+                                     value=st.session_state.custom_start_date, 
+                                     min_value=earliest_date, 
+                                     max_value=latest_date)
+        end_date   = col2.date_input("End date", 
+                                     value=st.session_state.custom_end_date, 
+                                     min_value=start_date if start_date else earliest_date, 
+                                     max_value=latest_date)
         # Be careful that st.date_input might return a tuple or None
         # TODO: Find better way to ensure this
         if not isinstance(start_date, date):

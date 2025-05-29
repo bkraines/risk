@@ -13,8 +13,9 @@ def build_dashboard(factor_data):
     
     factor_list = factor_data['factor_name'].values
     with st.sidebar:
-        factor_1 = st.selectbox('Factor 1', options=factor_list, index=0)
-        factor_2 = st.selectbox('Factor 2', options=factor_list, index=1)
+        col1, col2 = st.columns([1, 1])
+        factor_1 = col1.selectbox('Factor 1', options=factor_list, index=0)
+        factor_2 = col2.selectbox('Factor 2', options=factor_list, index=1)
         start_date, end_date = select_date_window(factor_data.indexes['date'], default_window_name='1y')
         regime_shading = st.toggle('VIX Regime Shading', value=False)
         vol_type = st.selectbox('Volatility Halflife for Z-Score', options=HALFLIFES, index=0)
