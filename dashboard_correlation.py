@@ -20,7 +20,7 @@ def build_dashboard(factor_data):
         start_date, end_date = select_date_window(factor_data.indexes['date'], default_window_name='15y')
         col1, col2 = st.columns([1, 1])
         corr_type = col1.selectbox('Halflife (days)', options=HALFLIFES, index=corr_index)
-        change    = col2.number_input('Change (days)', min_value=1, value=21)
+        change    = col2.number_input('Change (days)', min_value=1, value=21, step=21)
 
     fig1 = draw_correlation_heatmap(factor_data.corr.sel(date=slice(start_date, end_date)), 
                                    fixed_factor=factor, 
