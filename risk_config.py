@@ -12,24 +12,18 @@ FACTOR_FILENAME = 'factor_master.xlsx'
 FACTOR_SET: Literal['read', 'read_short'] = 'read'    
 
 CACHE_TARGET: Literal['disk', 'arraylake', 'streamlit'] = 'disk' #'streamlit'
-STREAMLIT_CACHE = False
 
 # In case of `streamlit` caching, limit RAM usage by restricting `HALFLIFES`
-if STREAMLIT_CACHE or (CACHE_TARGET == 'streamlit'):
-    HALFLIFES = [126]
-else:
-    HALFLIFES = [21, 63, 126, 252, 512]
+HALFLIFES = [21, 63, 126, 252, 512] if CACHE_TARGET != 'streamlit' else [126]
 
 COV_TYPES = {str(h): {'vol_type': h,
                       'corr_type': h}
              for h in HALFLIFES}
 
-
 # TODO: Pack REGIME_DICT into get_vix_regime call
 REGIME_DICT = {'vix': {'bins': [0, 16, 30, inf], #[0, 25, 40, inf],
                        'labels': ['vix_lo', 'vix_mid', 'vix_hi']}
                }
-
 
 ROLLING_WINDOWS: dict[str, int] = {
     "1d": 1,
@@ -75,6 +69,7 @@ HISTORICAL_WINDOWS: dict[str, tuple[datetime, datetime]] = {
     "ARK Mania":         (datetime(2020, 4, 1), datetime(2021, 2, 12)),
     "Tech Wreck (2022)": (datetime(2022, 1, 1), datetime(2022, 10, 15)),
 } 
+
 VIX_COLORS = {
     'vix_lo':  'rgba(200, 255, 200, 0.2)',
     'vix_mid': 'rgba(255, 255, 150, 0.2)',

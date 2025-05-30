@@ -20,9 +20,8 @@ from dashboard_event_study import build_dashboard as event_study
 
 # TODO: Update streamlit `[theme]` section of `.streamlit/config.toml` file to match `plotly_white` colors
 
-# st.write('Start factor construction')
-factor_data = get_factor_data()
-# st.write('End factor construction')
+with st.spinner("Constructing factors..."):
+    factor_data = get_factor_data()
 
 pg = st.navigation([
                     st.Page(lambda: time_series(factor_data), 

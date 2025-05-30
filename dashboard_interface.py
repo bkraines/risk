@@ -10,9 +10,11 @@ from risk_config import CACHE_TARGET, CACHE_DIR, CACHE_FILENAME, HISTORICAL_WIND
 
 
 def force_data_refresh():
+    # FIXME: This just updates the cache, not the variable in memory
     with st.sidebar:
         if st.button('Refresh Data'):
-            get_factor_data(read_cache=False)
+            with st.spinner("Constructing factors..."):
+                get_factor_data(read_cache=False)
         st.write(f'Cache target: {CACHE_TARGET}')
         if CACHE_TARGET == 'disk':
             last_updated = get_directory_last_updated_time(os.path.join(CACHE_DIR, CACHE_FILENAME))

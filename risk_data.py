@@ -139,7 +139,6 @@ def is_data_current(ds: xr.Dataset) -> bool:
     # latest_business_date = latest_business_day()
     # return latest_data_date >= latest_business_date
 
-
 @cache(CACHE_TARGET)
 def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PORTFOLIOS) -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
@@ -188,7 +187,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     # `Portfolios` are those portfolios defined in risk_config_port.py
     factor_list_portfolios = factor_master.query("source=='portfolio'").index
     print(f'Building {len(factor_list_portfolios)} portfolio factors')
-    if not factor_list_portfolios.empty and False: # Commenting out for Heroku testing
+    if not factor_list_portfolios.empty:
         rebalancing_dates = factor_returns.resample('M').last().index
         portfolio_returns, portfolio_weights_long = build_all_portfolios(portfolios, factor_returns, rebalancing_dates)
         factor_returns = pd.concat([factor_returns, portfolio_returns[factor_list_portfolios]], axis=1)
