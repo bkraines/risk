@@ -49,7 +49,7 @@ def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotat
 
     fig.update_traces(hovertemplate=None)
     fig.update_layout( #legend_title_text=None,
-                      hovermode='x unified',
+                      hovermode=hovermode,
                       )
 
     return fig
