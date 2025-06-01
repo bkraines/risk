@@ -9,25 +9,19 @@ from dashboard_interface import add_sidebar_defaults
 
 
 def build_dashboard(factor_data):
-    # TODO: Include predefined event studies
+    # TODO: Include 'before' and 'after' arguments in `EVENT_STUDIES` dict
     factor_list   = factor_data.indexes['factor_name']
     earliest_date = factor_data.indexes['date'].min().date()
-    latest_date   = factor_data.indexes['date'].max().date() #.sel(date=slice(None, '2024'))
+    latest_date   = factor_data.indexes['date'].max().date()
 
-    # initial_pair = [('SPY', '2018-01-28'), ('SPY', '2025-04-01')] # Align VIX peak 1w prior (SPY)
-    # initial_pair = EVENT_PAIRS['hi_vix3']
-    # st.session_state.numpairs = len(initial_pair)
-    # if 'num_pairs' not in st.session_state:
-    #     st.session_state.num_pairs = len(initial_pair)
     def add_pair():
         st.session_state.num_pairs += 1
+
     def remove_pair():
         if st.session_state.num_pairs > 1:
             st.session_state.num_pairs -= 1
-    
-    event_list = []
-    with st.sidebar:
 
+    def add_event_study_selectbox():
         # Track the selected event name
         event_study_name = st.selectbox("Event Study", options=EVENT_STUDIES.keys(), index=0)
 
@@ -41,10 +35,14 @@ def build_dashboard(factor_data):
         if 'num_pairs' not in st.session_state:
             st.session_state.num_pairs = len(EVENT_STUDIES[event_study_name])
 
-        event_pair = EVENT_STUDIES[event_study_name]  # get fresh list
+        return EVENT_STUDIES[event_study_name]  # get fresh list
 
+    
+    event_list = []
+    with st.sidebar:
+
+        event_pair = add_event_study_selectbox()
         for i in range(1, st.session_state.num_pairs + 1):
-
             col1, col2 = st.columns([1, 1])
             if i < len(event_pair)+1: # Choose the next pair from the event list
                 factor      = col1.selectbox(label='Factor' if i == 1 else '',
@@ -80,9 +78,11 @@ def build_dashboard(factor_data):
             before = st.number_input("Days before event", min_value=0, value=63, step=21)
         with col2:
             after = st.number_input("Days after event", min_value=0, value=252, step=21)
+            
+        reverse_y_axis = st.toggle('Reverse y-axis', key='reverse_y_axis', value=False)
 
     ret_df = factor_data.ret.to_pandas()
-    fig = draw_event_study(ret_df, event_list, before=before, after=after)
+    fig = draw_event_study(ret_df, event_list, before=before, after=after, reverse_y_axis=reverse_y_axis)
     st.write(fig)
 
     add_sidebar_defaults()

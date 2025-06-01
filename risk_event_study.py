@@ -116,7 +116,8 @@ def run_event_study(returns_df: pd.Series | pd.DataFrame,
 def draw_event_study(returns_df: pd.Series | pd.DataFrame, 
                      event_list: list[tuple[str, pd.Timestamp]], 
                      before: int = 63, 
-                     after: int = 252) -> Figure:
+                     after: int = 252,
+                     reverse_y_axis: bool = False) -> Figure:
     """
     Plot an event study figure from returns and event list.
 
@@ -174,6 +175,7 @@ def draw_event_study(returns_df: pd.Series | pd.DataFrame,
                           xaxis_title_text=None,
                           yaxis_title_text=None,
                        )
+           .update_yaxes(autorange='reversed' if reverse_y_axis else True)
     )
     # return px_format(fig)
     return fig
