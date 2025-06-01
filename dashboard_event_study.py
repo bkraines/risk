@@ -1,7 +1,7 @@
 from typing import Hashable
 import streamlit as st
 
-from risk_config import EVENT_PAIRS
+from risk_config import EVENT_STUDIES
 from risk_data import get_factor_data
 from risk_event_study import draw_event_study
 
@@ -15,10 +15,10 @@ def build_dashboard(factor_data):
     latest_date   = factor_data.indexes['date'].max().date() #.sel(date=slice(None, '2024'))
 
     # initial_pair = [('SPY', '2018-01-28'), ('SPY', '2025-04-01')] # Align VIX peak 1w prior (SPY)
-    initial_pair = EVENT_PAIRS['hi_vix3']
-
-    if 'num_pairs' not in st.session_state:
-        st.session_state.num_pairs = len(initial_pair)
+    # initial_pair = EVENT_PAIRS['hi_vix3']
+    # st.session_state.numpairs = len(initial_pair)
+    # if 'num_pairs' not in st.session_state:
+    #     st.session_state.num_pairs = len(initial_pair)
     def add_pair():
         st.session_state.num_pairs += 1
     def remove_pair():
@@ -27,22 +27,40 @@ def build_dashboard(factor_data):
     
     event_list = []
     with st.sidebar:
+
+        # Track the selected event name
+        event_study_name = st.selectbox("Event Study", options=EVENT_STUDIES.keys(), index=0)
+
+        # Check if the event name changed since last run
+        if ('prior_event_name' not in st.session_state) or (st.session_state.prior_event_name != event_study_name):
+            event_pair = EVENT_STUDIES[event_study_name]
+            st.session_state.num_pairs = len(event_pair)
+            st.session_state.prior_event_name = event_study_name  # update tracker
+
+        # fallback if not set
+        if 'num_pairs' not in st.session_state:
+            st.session_state.num_pairs = len(EVENT_STUDIES[event_study_name])
+
+        event_pair = EVENT_STUDIES[event_study_name]  # get fresh list
+
         for i in range(1, st.session_state.num_pairs + 1):
-            
-            col1, col2 = st.columns([1, 1]) 
-            if i < len(initial_pair)+1:
-                factor      = col1.selectbox(label='Factor' if i == 1 else '', 
-                                             options=factor_list, 
-                                             index=list(factor_list).index(initial_pair[i-1][0]), 
-                                             key=f'factor_{i}', 
-                                             label_visibility='visible' if i == 1 else 'collapsed')
+
+            col1, col2 = st.columns([1, 1])
+            if i < len(event_pair)+1: # Choose the next pair from the event list
+                factor      = col1.selectbox(label='Factor' if i == 1 else '',
+                                             options=factor_list,
+                                             index=list(factor_list).index(event_pair[i-1][0]),
+                                             key=f'factor_{i}',
+                                            #  label_visibility='visible' if i == 1 else 'collapsed',
+                                            label_visibility='collapsed',)
                 event_date = col2.date_input(label='Event Date'  if i==1 else '',
-                                             value=initial_pair[i-1][1], 
+                                             value=event_pair[i-1][1], 
                                              min_value=earliest_date, 
                                              max_value=latest_date, 
                                              key=f'date_{i}', 
-                                             label_visibility='visible' if i == 1 else 'collapsed')
-            else:
+                                            #  label_visibility='visible' if i == 1 else 'collapsed'
+                                             label_visibility='collapsed')
+            else: # Choose the next factor from the factor list, use the latest date
                 factor = col1.selectbox(label=f'Factor {i}', options=factor_list, index=i-1, key=f'factor_{i}', label_visibility='collapsed')
                 event_date = col2.date_input(label=f'Date {i}', value=latest_date, min_value=earliest_date, max_value=latest_date, key=f'date_{i}', label_visibility='collapsed')
 

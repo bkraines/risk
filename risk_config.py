@@ -76,19 +76,41 @@ VIX_COLORS = {
     'vix_hi':  'rgba(255, 150, 150, 0.2)'
 }
 
-EVENT_PAIRS = {
-    'hi_spy':     [('SPY',  '2018-01-26'),  # Align SPY peak
-                   ('SPY',  '2025-02-19')],
-    'jan_1':      [('^VIX', '2018-01-01'),  # Start Jan 1
-                   ('^VIX', '2025-01-01')],
-    'hi_vix':     [('^VIX', '2018-02-04'), # Align VIX peak
-                   ('^VIX', '2025-04-08')],
-    'hi_vix2':    [('^VIX', '2018-01-31'), # Align VIX peak, 1w prior (vix selloff)
-                   ('^VIX', '2025-04-01')],
-    'hi_vix_spy': [('SPY',  '2018-01-28'), # Align VIX peak 1w prior (SPY)
-                   ('SPY',  '2025-04-01')],
-    'hi_vix3':    [('SPY',  '2018-01-24'), # Align first VIX selloff
-                   ('SPY',  '2025-02-15')],
-    'test':       [('RSP',  '2025-05-27'), 
-                   ('IWM',  '2025-05-09')],
+EVENT_STUDIES = {
+    'Trade War — VIX selloff':    
+        [('SPY',  '2018-01-24'), # Align first VIX selloff
+         ('SPY',  '2025-02-15')],
+    'Trade War — YTD':
+        [('^VIX', '2018-01-01'),  # Start Jan 1
+         ('^VIX', '2025-01-01')],
+    '2024 Election': 
+        [('SPY',      '2024-11-05'),
+         ('ELECTION', '2024-11-05'),
+         ('FEZ',      '2024-11-05'),
+         ('ICLN',     '2024-11-05'),
+         ('IWM',      '2024-11-05'),
+         ('XLF',      '2024-11-05')],
+    'US Elections': 
+        [('SPY', '2024-11-05'),
+         ('SPY', '2020-11-03'),
+         ('SPY', '2016-11-08'),
+         ('SPY', '2012-11-06'),
+         ('SPY', '2008-11-04'),
+         ('SPY', '2004-11-02'),
+         ('SPY', '2000-11-07')],
+    'Trade War — SPX peak':
+        [('SPY',  '2018-01-26'),  # Align SPY peak
+         ('SPY',  '2025-02-19')],
+    'Trade War — VIX peak':     
+        [('^VIX', '2018-02-04'), # Align VIX peak
+         ('^VIX', '2025-04-08')],
+    'Trade War — VIX peak 2':
+        [('^VIX', '2018-01-31'), # Align VIX peak, 1w prior (vix selloff)
+         ('^VIX', '2025-04-01')],
+    'Trade War — VIX peak 3': 
+        [('SPY',  '2018-01-28'), # Align VIX peak 1w prior (SPY)
+         ('SPY',  '2025-04-01')],
+    'Test':
+        [('RSP',  '2025-05-27'), 
+         ('IWM',  '2025-05-09')],
 }
