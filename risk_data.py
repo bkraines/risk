@@ -139,6 +139,7 @@ def is_data_current(ds: xr.Dataset) -> bool:
     # latest_business_date = latest_business_day()
     # return latest_data_date >= latest_business_date
 
+
 @cache(CACHE_TARGET)
 def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PORTFOLIOS) -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`

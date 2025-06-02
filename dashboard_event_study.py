@@ -1,4 +1,3 @@
-from typing import Hashable
 import streamlit as st
 
 from risk_config import EVENT_STUDIES
@@ -40,7 +39,7 @@ def build_event_list(factor_data, event_pairs):
 
     event_list = []
     for i in range(st.session_state.num_pairs):
-        predefined_event = (i < len(event_pairs))
+        predefined_event: bool = (i < len(event_pairs))
         col1, col2 = st.columns([1, 1])
         factor = col1.selectbox(label='Factor' if i == 0 else '',
                                 options=factor_list,

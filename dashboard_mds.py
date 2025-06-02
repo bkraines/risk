@@ -12,9 +12,10 @@ def build_dashboard(factor_data):
         earliest_date = factor_data.indexes['date'].min().date()
         latest_date = factor_data.indexes['date'].max().date()
         end_date = st.date_input("End date", latest_date, earliest_date, latest_date)
-        animate = st.toggle('Animate', value=False)
+        animate    = st.toggle('Animate',    value=False)
         composites = st.toggle('Composites', value=True)
-        trump = st.toggle('Trump', value=True)
+        trump      = st.toggle('Trump',      value=True)
+        portfolios = st.toggle('Portfolios', value=True)
     
     if animate:
         ds = (factor_data
@@ -37,6 +38,7 @@ def build_dashboard(factor_data):
             animate=animate,
             drop_composites=not(composites),
             drop_trump=not(trump),
+            drop_portfolios=not(portfolios),
             **args))
 
     st.write(fig)
@@ -44,7 +46,7 @@ def build_dashboard(factor_data):
     add_sidebar_defaults()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     factor_data = get_factor_data()
     build_dashboard(factor_data)
     # add_sidebar_defaults()
