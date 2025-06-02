@@ -117,6 +117,7 @@ def draw_event_study(returns_df: pd.Series | pd.DataFrame,
                      event_list: list[tuple[str, pd.Timestamp]], 
                      before: int = 63, 
                      after: int = 252,
+                     center_y_axis: bool = True,
                      reverse_y_axis: bool = False) -> Figure:
     """
     Plot an event study figure from returns and event list.
@@ -148,7 +149,7 @@ def draw_event_study(returns_df: pd.Series | pd.DataFrame,
     event_study = run_event_study(returns_df, event_list, before=before, after=after)
     fig = (px.line(event_study.reset_index(), 
                    x='day_offset', 
-                   y='cret_centered', 
+                   y='cret_centered' if center_y_axis else 'cret', 
                    color='event_name', 
                    hover_data={'day_offset': False,
                                'factor_name': False,
