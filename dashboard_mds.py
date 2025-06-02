@@ -5,17 +5,21 @@ from risk_corr_mds import run_mds
 from dashboard_interface import add_sidebar_defaults
 
 def build_dashboard(factor_data):
+    # TODO: If animate, replace `end_date` selector with `select_date_window`,
+    #       with dropdown for sampling (rebalancing?) frequency
+    #       see: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+    
     args = {'random_state': 42, 
             'n_init': 100}
     
     with st.sidebar:
         earliest_date = factor_data.indexes['date'].min().date()
-        latest_date = factor_data.indexes['date'].max().date()
-        end_date = st.date_input("End date", latest_date, earliest_date, latest_date)
-        animate    = st.toggle('Animate',    value=False)
-        composites = st.toggle('Composites', value=True)
-        trump      = st.toggle('Trump',      value=True)
-        portfolios = st.toggle('Portfolios', value=True)
+        latest_date   = factor_data.indexes['date'].max().date()
+        end_date      = st.date_input("End date", latest_date, earliest_date, latest_date)
+        animate       = st.toggle('Animate',    value=False)
+        composites    = st.toggle('Composites', value=True)
+        election      = st.toggle('Election',   value=True)
+        portfolios    = st.toggle('Portfolios', value=True)
     
     if animate:
         ds = (factor_data
@@ -28,7 +32,6 @@ def build_dashboard(factor_data):
         dates = (ds.date.values[[-63, -42, -21, -1]]
                  .astype('datetime64[D]').astype(str))
         start_date = dates[0]
-        
     
     fig = (run_mds(ds, 
             transformation='rotate_initial', 
@@ -37,7 +40,7 @@ def build_dashboard(factor_data):
             tick_range=1,
             animate=animate,
             drop_composites=not(composites),
-            drop_trump=not(trump),
+            drop_election=not(election),
             drop_portfolios=not(portfolios),
             **args))
 

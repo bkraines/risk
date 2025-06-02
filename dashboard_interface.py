@@ -43,25 +43,23 @@ def select_date_window(
     default_window_name: Optional[str] = None,
 ) -> tuple[date, date]:
     """
-    Display a Streamlit UI to select a date range from trailing windows, named ranges, to-date periods, or a custom picker.
+    Display a Streamlit UI to select a date range from rolling windows, expanding windows, historical windows, or a custom picker.
 
     Parameters
     ----------
     date_list : Iterable[datetime]
-        A sorted iterable of available dates.
-    trailing_windows : Optional[dict[str, int]]
-        Mapping of trailing window labels to their respective lengths (e.g., "1y": 252).
-    market_events : Optional[dict[str, tuple[datetime, datetime]]]
-        Mapping of named event labels to specific (start, end) date tuples.
-    to_date_windows : Optional[dict[str, Callable[[datetime], tuple[datetime, datetime]]]]
-        Mapping of to-date labels (e.g., "YTD", "MTD") to callables producing (start, end) dates.
-    default_option : Optional[str]
-        Preferred default selection in the dropdown. Defaults to 'max' if not found.
+        An iterable of available dates (will be sorted internally)
+    rolling_windows : Optional[dict[str, int]], default=ROLLING_WINDOWS
+        Mapping of rolling window labels to their respective lengths in days (e.g. {"1y": 252})
+    historical_windows : Optional[dict[str, tuple[datetime, datetime]]], default=HISTORICAL_WINDOWS
+        Mapping of named historical ranges (e.g. "GFC", "COVID") to specific (start, end) date tuples
+    default_window_name : Optional[str], default=None
+        Window to pre-select in the dropdown; falls back to 'max' if not provided or not found
 
     Returns
     -------
     tuple[datetime, datetime]
-        The selected (start_date, end_date) from the UI.
+        The (start_date, end_date) selected by the user
     """
     # TODO: Pass in a list of to_date_windows that we want to include 
     #       then from the dictionary from a An str-> Callable mapping.

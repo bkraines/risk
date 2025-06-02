@@ -17,6 +17,7 @@ def get_yahoo_data(ticker, field_name):
     # cache.columns.get_level_values(1)
     return yf.download(ticker, auto_adjust=False)[field_name].squeeze()
 
+
 def get_yahoo_data_set(tickers, field_name, asset_names=None, batch=False):
     # TODO: Possibly save time by sending yfinance full list of tickers instead of looping
     if asset_names is None:
@@ -50,6 +51,7 @@ def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
     ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
     ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
     return ds
+
 
 def get_portfolio_master(portfolios: dict):
     # TODO: Enable different parameters for each portfolio by looping through dictionary
@@ -147,7 +149,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     # TODO: Refactor returns from yahoo, composites, and portfolios into separate functions
     # TODO: Add timing to console logs
     # TODO: Enforce data variable and coordinate order in xarray Dataset
-    # TODO: Portfolios dict contains a pd.DataFrame, so can't be stored in attrs of zarr DataSet
+    # TODO: Replace 'composite==1' with 'source=="composite"' in factor_master
     factor_master = get_factor_master(file_name='factor_master.xlsx', sheet_name=factor_set, portfolios=portfolios)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
@@ -192,8 +194,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
         rebalancing_dates = factor_returns.resample('M').last().index
         portfolio_returns, portfolio_weights_long = build_all_portfolios(portfolios, factor_returns, rebalancing_dates)
         factor_returns = pd.concat([factor_returns, portfolio_returns[factor_list_portfolios]], axis=1)
-        
-    
+
     print('Calculating factor statistics')
     levels_latest = levels_yf.iloc[-1]
     factor_data = xr.Dataset()
@@ -221,4 +222,3 @@ def get_factor_data(**kwargs) -> xr.Dataset:
         case 'arraylake':
             kwargs.setdefault("check", is_data_current)
     return build_factor_data(**kwargs)
-

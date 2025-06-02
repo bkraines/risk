@@ -273,7 +273,7 @@ def get_marker_size(ds):
     return df['marker_size'] #, 'marker_symbol']]
 
 
-def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_trump=False, drop_portfolios=False, **kwargs):
+def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_election=False, drop_portfolios=False, **kwargs):
     # TODO: Pass in full dataset to extract corr, factor_master, and vol (for sizing)
     
     # TODO: Pass in a list of dates or take all dates from the dataarray
@@ -306,10 +306,11 @@ def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, dr
     if drop_composites:
         # mds_ts = mds_ts.query('composite == 0')
         mds_ts = mds_ts.query('source != "composite"')
-    if drop_trump:
-        mds_ts = mds_ts.query('factor_name != "TRUMP"')
     if drop_portfolios:
         mds_ts = mds_ts.query('source != "portfolio"')
+    if drop_election:
+        mds_ts = mds_ts.query('factor_name != "ELECTION"')
+
     
     if animate:
         fig = draw_mds_ts(mds_ts, tick_range=tick_range)
