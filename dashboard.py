@@ -17,6 +17,7 @@ from dashboard_portfolios  import build_dashboard as portfolios
 from dashboard_master      import build_dashboard as master
 from dashboard_regime      import build_dashboard as regime
 from dashboard_event_study import build_dashboard as event_study
+from dashboard_breakdown   import build_dashboard as breakdown
 
 # TODO: Update streamlit `[theme]` section of `.streamlit/config.toml` file to match `plotly_white` colors
 
@@ -63,7 +64,10 @@ pg = st.navigation([
                     st.Page(lambda: master(factor_data),
                             title='Factor Master',
                             url_path='factor_master'),
-
+                    
+                    st.Page(lambda: breakdown(factor_data),
+                            title='Covariance Breakdown',
+                            url_path='breakdown'),
                     ])
 
 # add_sidebar_defaults()
