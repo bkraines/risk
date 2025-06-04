@@ -16,7 +16,7 @@ def build_dashboard(factor_data):
 
     with st.sidebar:
         corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)
-        return_start, return_end = select_date_window(factor_data.indexes['date'], default_window_name='MTD')
+        return_start, return_end = select_date_window(factor_data.indexes['date'], default_window_name='1m')
         col1, col2 = st.columns([1, 1])
         vol_type     = col1.selectbox('Volatility Halflife', options=model_options, index=model_default)
         corr_type    = col2.selectbox('Correlation Halflife', options=model_options, index=model_default)

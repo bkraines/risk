@@ -9,11 +9,9 @@ from risk_util import flatten_multiindex
 
 PandasObjectT = TypeVar("PandasObjectT", pd.Series, pd.DataFrame)
 
-# TODO: Offer a preconstructed list of events
 # TODO: Toggle dates on the x-axis
-# TODO: Toggle a reverse y-axis
 # TODO: Toggle reverse layering on the series
-# TODO: Improve tool tips
+# TODO: Beautify tool tips
 # TODO: Fix y-axis units
 # TODO: Include statistics
 

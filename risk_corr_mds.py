@@ -1,7 +1,7 @@
 from typing import Union, Literal, Optional
+from plotly.graph_objects import Figure
 
-from numpy import sqrt, cos, sin, arctan2, array #, identity
-# import numpy as np
+from numpy import sqrt, cos, sin, arctan2, array
 import pandas as pd
 import xarray as xr
 xr.set_options(keep_attrs=True,
@@ -12,7 +12,6 @@ import plotly.express as px
 import plotly.io as pio
 # pio.renderers.default='png'
 import plotly.graph_objects as go
-# from plotly.graph_objects import Figure
 
 # from risk_util import to_pandas_strict
 
@@ -273,14 +272,13 @@ def get_marker_size(ds):
     return df['marker_size'] #, 'marker_symbol']]
 
 
-def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_election=False, drop_portfolios=False, **kwargs):
+def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_election=False, drop_portfolios=False, **kwargs) -> Figure:
+    # TODO: Include date and description in hovertext for scatter and whiskers
     # TODO: Pass in full dataset to extract corr, factor_master, and vol (for sizing)
-    
     # TODO: Pass in a list of dates or take all dates from the dataarray
     # TODO: Make clear the ordering of dates (use sorted function)
     # t0, t1, t2 = dates
     # (t0, t1, t2) = factor_data2.date.values[[-1, -21-1, -63-1]]
-
     
     transformation_type = {None:             'No rotation', 
                            'rotate':         'Rotate SPY to x-axis each day', 

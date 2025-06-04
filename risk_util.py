@@ -1,4 +1,4 @@
-from typing import Callable, Any, Hashable, List, Literal, Optional
+from typing import Callable, Any, Hashable, List, Literal, Optional, TypeVar
 
 import os 
 from io import StringIO
@@ -11,6 +11,8 @@ import pickle
 import pandas as pd
 import xarray as xr
 import streamlit as st
+
+PandasObject = TypeVar('PandasObject', pd.DataFrame, pd.Series)
 
 from risk_config import CACHE_DIR, ARRAYLAKE_REPO
 # print("--- Loading risk_lib.util ---")
@@ -466,9 +468,12 @@ def restore_df_from_json(obj: Any) -> Any:
         return obj
     else:
         return obj
-    
-    
 
 
 def flatten_multiindex(index, sep='_'):
     return index.map(lambda x: sep.join(map(str, x)))
+
+
+def trim_leading_zeros(obj: PandasObject) -> PandasObject:
+    mask = (obj != 0).cumsum() == 0
+    return obj.mask(mask)

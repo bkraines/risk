@@ -7,7 +7,7 @@ import yfinance as yf
 
 from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
 from risk_dates import business_days_ago #, latest_business_day
-from risk_util import xr_pct_change, safe_reindex, cache, convert_df_to_json
+from risk_util import xr_pct_change, safe_reindex, cache, convert_df_to_json, trim_leading_zeros
 from risk_stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
 from risk_config_port import PORTFOLIOS
 from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
@@ -193,7 +193,9 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     if not factor_list_portfolios.empty:
         rebalancing_dates = factor_returns.resample('M').last().index
         portfolio_returns, portfolio_weights_long = build_all_portfolios(portfolios, factor_returns, rebalancing_dates)
-        factor_returns = pd.concat([factor_returns, portfolio_returns[factor_list_portfolios]], axis=1)
+        factor_returns = pd.concat([factor_returns, 
+                                    trim_leading_zeros(portfolio_returns[factor_list_portfolios])
+                                    ], axis=1)
 
     print('Calculating factor statistics')
     levels_latest = levels_yf.iloc[-1]

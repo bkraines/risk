@@ -79,6 +79,8 @@ def build_event_list(factor_data, event_pairs):
 
 def build_dashboard(factor_data):
     # TODO:  Include 'before' and 'after' arguments in `EVENT_STUDIES` dict
+    # TODO:  Display and load event pairs from text box
+    # TODO:  Gray out all but primary event
     # FIXME: Uncentered data should return level, not cumulative return
     with st.sidebar:
         event_pairs = choose_event_study(EVENT_STUDIES)

@@ -44,7 +44,7 @@ def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type
                           'Theme':     'red'}
     fig = (px_scatter(df, x='corr', y='zscore', text='asset', color='asset_class', #size='size',
                       color_map_override = color_map_override,
-                      hover_data={'description': True})
+                      hover_data={'asset': True, 'description': True})
            .update_layout(yaxis_title=return_title,
                           xaxis_title=f'Correlation with {corr_asset}')
            .update_xaxes(showgrid=True, 
