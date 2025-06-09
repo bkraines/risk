@@ -12,6 +12,7 @@ from risk_stats import align_dates, calculate_returns_set, accumulate_returns_se
 from risk_config_port import PORTFOLIOS
 from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
 
+
 def get_yahoo_data(ticker, field_name):
     # TODO: Check cache first
     # cache.columns.get_level_values(1)
@@ -159,7 +160,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     factor_list_yf = factor_master.query("source=='yfinance'").index
     print(f'Downloading {len(factor_list_yf)} yfinance factors')
     levels_yf = (get_yahoo_data_set(asset_names = factor_list_yf.tolist(), 
-                                    tickers = factor_master.loc[factor_list, 'ticker'],
+                                    tickers = factor_master.loc[factor_list_yf, 'ticker'],
                                     field_name = 'Adj Close')
                  .pipe(align_dates, ['SPY'])
                  )
@@ -170,6 +171,16 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
                                    multiplier_map=multiplier_map)
     # ret_list = [ret_yf]
     factor_returns = ret_yf
+
+    def smart_dot(returns: pd.DataFrame, composite_weights: pd.DataFrame) -> pd.DataFrame:
+        """Matrix multiplication peformed for each composite factor avoid unnecessary NaNs."""
+        # TODO: Generalize to arbitrary matrix multiplication
+        dict_f = {}
+        for factor, weights in composite_weights.items():
+            weights_f = weights[weights!=0]
+            returns_f = returns[weights_f.index].dropna()
+            dict_f[factor] = returns_f @ weights_f
+        return pd.concat(dict_f, axis=1)
     
     # Get composite returns 
     # `Composites` are those portfolios defined in factor_master.xlsx
@@ -182,7 +193,8 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
                             .fillna(0)
                             .loc[factor_list_yf]
                             )
-        composite_ret = ret_yf @ composite_weights
+        # composite_ret = ret_yf @ composite_weights
+        composite_ret = smart_dot(ret_yf, composite_weights)
         # ret_list.append(portfolios_ret)
         factor_returns = pd.concat([factor_returns, composite_ret], axis=1)
     
