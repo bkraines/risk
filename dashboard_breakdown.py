@@ -42,8 +42,8 @@ def build_dashboard(factor_data):
     figs = {'ts': create_time_series_plot(metrics, CONFIG['shock_quantile']),
             'bar': create_contribution_bar_chart(metrics['contrib_mahal'], shock_days, CONFIG['num_shock_days_chart'])}
     
-    for fig in figs.values():
-        st.plotly_chart(fig)
+    for key, fig in figs.items():
+        st.plotly_chart(fig, key=key)
         
     add_sidebar_defaults()
     
@@ -106,8 +106,8 @@ def build_dashboard_old(factor_data):
     #             'qqplot':    f'QQ Plot {factor_1} / {factor_2}'}
   
 
-    for fig in figs.values():
-        st.plotly_chart(fig)
+    for key, fig in figs.items():
+        st.plotly_chart(fig, key=key)
 
     if regime_shading:
         ret = factor_data.ret.sel(factor_name=[factor_1, factor_2]).to_pandas()

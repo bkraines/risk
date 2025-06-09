@@ -124,8 +124,8 @@ def px_scatter(df, x, y, color_map_override=None, **kwargs):
 
 
 def px_bar(da: xr.DataArray, title: Optional[str] = None) -> Figure:
-    # TODO: Throws error if dataarray has duplicate column
     df = da.to_pandas()
+    df = df.loc[:, ~df.columns.duplicated()] # Remove duplicate columns if any
     fig = (px.bar(df, barmode='group', 
                   title=title,
                   template='plotly_white')
