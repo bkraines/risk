@@ -18,6 +18,7 @@ def build_dashboard(factor_data):
         factor_2 = col2.selectbox('Factor 2', options=factor_list, index=1)
         
         start_date, end_date = select_date_window(factor_data.indexes['date'], default_window_name='1y')
+        common_window = st.toggle('Common Window', value=False)
         regime_shading = st.toggle('VIX Regime Shading', value=False)
         
         col3, col4 = st.columns([1, 1])
@@ -31,6 +32,10 @@ def build_dashboard(factor_data):
     # factor_data['zscore']  = get_zscore(factor_data.ret, factor_data.vol, shift=1)
     
     ds = factor_data.sel(date=slice(start_date, end_date))
+    if common_window:
+        start_date_common = ds['cret'].sel(factor_name=[factor_1, factor_2]).dropna(dim='date').date.min().values
+        ds = factor_data.sel(date=slice(start_date_common, None))
+    
     figs = {'cret':      draw_cumulative_return(ds.cret, factor_name=factor_1, factor_name_1=factor_2),
             'ret':       draw_returns(ds.ret, factor_name=factor_1, factor_name_1=factor_2),
             'zscore':    draw_zscore(ds.ret, ds.vol, factor_name=factor_1, factor_name_1=factor_2, vol_type=vol_type),
