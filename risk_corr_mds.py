@@ -13,10 +13,11 @@ import plotly.io as pio
 # pio.renderers.default='png'
 import plotly.graph_objects as go
 
+from risk_data import get_factor_master
 # from risk_util import to_pandas_strict
 
 def prepare_correlation(corr: xr.DataArray, transformation=None, start_date=None) -> pd.DataFrame:
-    factor_master = pd.DataFrame(corr.asset.attrs).T
+    factor_master = get_factor_master(corr)
     return (mds_ts_df(corr, 
                       transformation=transformation, 
                       start_date=start_date)
@@ -117,7 +118,7 @@ def multidimensional_scaling(correlation_matrix: pd.DataFrame, init=None, random
                         columns=pd.Index(['dim1', 'dim2'], name='dimension'))
 
 
-def mds_ts_df(corr: xr.DataArray, start_date=None, transformation=None, factor='SPY', **kwargs) -> pd.DataFrame:
+def mds_ts_df(corr: xr.DataArray, start_date=None, transformation=None, factor='SPY', corr_type=63, **kwargs) -> pd.DataFrame:
     # TODO: Factor out corr_type
 
     dates = corr.sel(date=slice(start_date, None)).date.values
@@ -128,7 +129,7 @@ def mds_ts_df(corr: xr.DataArray, start_date=None, transformation=None, factor='
     if transformation == 'rotate_initial':
         date = dates.max()
         # Choose halflife close to 63 days:
-        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() # _strict() # * 0 + np.identity(len(corr.asset))
+        df = corr.sel(date=date, corr_type=corr_type, method='nearest').to_pandas() # _strict() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed) #init=coordinates) 
         transformed_initial = transform_coordinates(coordinates, 'rotate', factor='SPY')
         transformation = None
@@ -138,7 +139,7 @@ def mds_ts_df(corr: xr.DataArray, start_date=None, transformation=None, factor='
     mds_dict = {}
     for date in dates:
         # Choose halflife close to 63 days
-        df = corr.sel(date=date, corr_type=63, method='nearest').to_pandas() #_strict() # * 0 + np.identity(len(corr.asset))
+        df = corr.sel(date=date, corr_type=corr_type, method='nearest').to_pandas() #_strict() # * 0 + np.identity(len(corr.asset))
         coordinates = multidimensional_scaling(df, init=transformed_initial, n_init=1) #init=transformed) 
         transformed = transform_coordinates(coordinates, transformation, factor=factor, 
                                             factor_list=None, coordinates_initial=transformed_initial)
@@ -272,7 +273,7 @@ def get_marker_size(ds):
     return df['marker_size'] #, 'marker_symbol']]
 
 
-def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_election=False, drop_portfolios=False, **kwargs) -> Figure:
+def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_election=False, drop_portfolios=False, corr_type=None, **kwargs) -> Figure:
     # TODO: Include date and description in hovertext for scatter and whiskers
     # TODO: Pass in full dataset to extract corr, factor_master, and vol (for sizing)
     # TODO: Pass in a list of dates or take all dates from the dataarray
@@ -286,11 +287,12 @@ def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, dr
                            'rotate_initial': '' #'Rotate SPY to x-axis today'
                            }
 
-    factor_master = pd.DataFrame(ds.factor_name.attrs).T
+    # factor_master = pd.DataFrame(ds.factor_name.attrs).T
+    factor_master = get_factor_master(ds)
     
     marker_size = get_marker_size(ds) #.rename('size')
     
-    mds_ts = (mds_ts_df(ds.corr, transformation=transformation, start_date=start_date, **kwargs)
+    mds_ts = (mds_ts_df(ds.corr, transformation=transformation, start_date=start_date, corr_type=63, **kwargs)
                 .reset_index()
                 .join(factor_master, on='factor_name')
                 .assign(date = lambda df: df['date'].astype(str))

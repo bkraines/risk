@@ -91,7 +91,7 @@ def build_factor_master(portfolios: Optional[dict] = None, **kwargs) -> pd.DataF
     return factor_master
 
 
-def get_factor_master(factor_data: Optional[xr.Dataset] = None, portfolios: Optional[dict] = PORTFOLIOS, **kwargs) -> pd.DataFrame:
+def get_factor_master(factor_data: Optional[xr.Dataset | xr.DataArray] = None, portfolios: Optional[dict] = PORTFOLIOS, **kwargs) -> pd.DataFrame:
     """
     Retrieves factor master, either from `factor_data` if provided or directly from the Excel config file.
 
