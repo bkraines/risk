@@ -20,12 +20,19 @@ def build_dashboard(factor_data):
         col1, col2 = st.columns([1, 1])
         vol_type     = col1.selectbox('Volatility Halflife', options=model_options, index=model_default)
         corr_type    = col2.selectbox('Correlation Halflife', options=model_options, index=model_default)
+        include_themes     = st.toggle('Include Themes',     value=False)
+        include_portfolios = st.toggle('Include Portfolios', value=False)
+
+    exclude = []
+    if not include_themes:
+        exclude.append('Theme')
+    if not include_portfolios:
+        exclude.append('Portfolio')
 
     return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
-    fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title)
+    fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title, exclude)
 
     st.write(fig)
-    
     add_sidebar_defaults()
 
 

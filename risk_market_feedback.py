@@ -4,12 +4,13 @@ from numpy import sqrt
 import pandas as pd
 import xarray as xr
 
+from risk_data import get_factor_master
 from risk_stats import total_return
 from risk_chart import px_scatter, px_write
 
 # TODO: Add chart of showing correlation at t and t-n
 
-def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title):
+def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title, exclude_asset_classes):
     # TODO: Rename 'asset' to 'factor' in dataframe
     
     ndays = factor_data['cret'].sel(date=slice(return_start, return_end)).date.size - 1  # - 1
@@ -29,7 +30,9 @@ def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type
     ret = total_return(factor_data['cret'], return_start, return_end)
     zscore = ret.div(vol).rename('zscore')
 
-    factor_master = pd.DataFrame(factor_data['factor_name'].attrs).T
+    # factor_master = pd.DataFrame(factor_data['factor_name'].attrs).T
+    factor_master = get_factor_master(factor_data)
+    factor_master = factor_master[~factor_master['asset_class'].isin(exclude_asset_classes)]
 
     df = (pd.concat([corr, zscore, factor_master[['asset_class', 'hyper_factor', 'description']]], axis=1)
           # .replace('MWTIX', 'TCW')
