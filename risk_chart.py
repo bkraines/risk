@@ -1,5 +1,6 @@
 from typing import Union, Optional, Any
 from plotly.graph_objects import Figure
+from pandas.io.formats.style import Styler
 
 import os
 
@@ -218,6 +219,7 @@ def draw_cumulative_return(da: xr.DataArray, factor_name: str, factor_name_1: st
 
 
 def draw_returns(ret: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
+    # TODO: Don't hardcode `/100` factor adjustment
     da = ret.sel(factor_name=[factor_name, factor_name_1]) / 100
     return px_bar(da, title=f'Daily Returns of {factor_name} and {factor_name_1} (%)')
 
@@ -232,6 +234,7 @@ def draw_zscore(ret: xr.DataArray, vol: xr.DataArray, factor_name: str, factor_n
 def draw_returns_old(ret: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
     # TODO: Extract `px.bar(...)` to function named `px_bar()`
     # TODO: Add zscore chart (Display % and std units? Add toggle?)
+    # TODO: Don't hardcod `.div(100)`
 
     df = ret.to_pandas()[[factor_name, factor_name_1]].div(100)
     fig = (px.bar(df, barmode='group', 
@@ -316,7 +319,7 @@ def draw_correlation(corr: xr.DataArray, factor_name: str, factor_name_1: str, c
     return fig
     
 
-def format_corr_matrix(corr: pd.DataFrame): # -> pd.io.formats.style.Styler:
+def format_corr_matrix(corr: pd.DataFrame) -> Styler:
     """
     Format the correlation matrix by adding asset class information and sorting.
     
@@ -327,7 +330,7 @@ def format_corr_matrix(corr: pd.DataFrame): # -> pd.io.formats.style.Styler:
     
     Returns
     -------
-    pd.io.formats.style.Styler
+    pandas.io.formats.style.Styler
         The formatted correlation matrix as a pandas Styler object.
     """
     # Sort the correlation matrix by asset class
@@ -405,7 +408,7 @@ def plot_qq(
     title: str = "QQ Plot",
     width: int = 600,
     height: int = 600,
-) -> go.Figure:
+) -> Figure:
     """
     Generate a QQ-plot comparing columns of a DataFrame to a theoretical distribution.
 
@@ -424,7 +427,7 @@ def plot_qq(
 
     Returns
     -------
-    go.Figure
+    Figure
         A Plotly figure object showing the QQ plot.
     """
     # TODO: Only drop from the top of the DataFrame
@@ -714,6 +717,7 @@ def add_regime_shading(
     - Shading is only applied for non-NaN regime blocks.
 
     """
+    # TODO: Add build_regime_vrects function, which add_regime_shading calls if rectanges aren't cached
     # TODO: Shading ends at the final date marker, which may not be chart's right edge
     #       (e.g. shading in `px.bar` charts with `barmode="group"` stops at the center of the final bar group)
     if regimes.empty:
@@ -728,6 +732,7 @@ def add_regime_shading(
                      .assign(group=(lambda df: (df['regime'] != df['regime'].shift()).cumsum()))
                      )
     date_list = regimes.index
+    vrects = []
     for (group, regime), block in regime_blocks.groupby(['group', 'regime']):
         if pd.isna(regime):
             continue
@@ -735,17 +740,29 @@ def add_regime_shading(
         end_date = block.index.max()
         # Draw the rectangle to the next valid date (don't end on a Friday, stretch to Monday)
         # TODO: If it's the last block, ensure coverage to chart edge
+        # TODO: Try speeding up with `searchsorted`
         end_date_next = (date_list[date_list > end_date].min()
                          if date_list.max() > end_date
                          else date_list.max()) # + pd.DateOffset(years=1)) # doesn't work
         color = color_map.get(regime, default_color)
-        fig.add_vrect(
+        vrects.append(dict(
+            xref='x',
             x0=start_date,
             x1=end_date_next,
+            yref='paper',
+            y0=0,
+            y1=1,
             fillcolor=color,
             # opacity=1.0.
             layer='below',
-            line_width=0
-        )
-        
+            line_width=0))
+        # fig.add_vrect(
+        #     x0=start_date,
+        #     x1=end_date_next,
+        #     fillcolor=color,
+        #     # opacity=1.0.
+        #     layer='below',
+        #     line_width=0
+        # )
+    fig.update_layout(shapes=fig.layout.shapes + tuple(vrects))  
     return fig
