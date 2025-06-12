@@ -89,7 +89,7 @@ def build_dashboard(factor_data):
         reverse_y_axis = st.toggle('Reverse y-axis', key='reverse_y_axis', value=False)
         center_y_axis  = st.toggle('Center y-axis', key='center_y_axis', value=True)
 
-    ret_df = factor_data.ret.to_pandas()
+    ret_df = factor_data.ret.to_pandas() / 100
     fig = draw_event_study(ret_df, 
                            event_list, 
                            before=before, 

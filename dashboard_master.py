@@ -11,7 +11,8 @@ def add_hyperlinks():
     links = {'Daily Shot': 'https://thedailyshot.com/',
              'US Yield Curve': 'https://www.ustreasuryyieldcurve.com/charts/treasuries-time-series',
              'Nishant Kumar': 'https://x.com/nishantkumar07',
-             'Cliff Asnes': 'https://www.aqr.com/Insights/Perspectives'}
+             'Cliff Asnes': 'https://www.aqr.com/Insights/Perspectives',
+             'Policy Uncertainty': 'https://www.policyuncertainty.com/'}
     for name, url in links.items():
         st.markdown(f"[{name}]({url})")
 

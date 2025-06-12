@@ -28,6 +28,7 @@ def display_memory_usage():
 
 
 def add_sidebar_defaults():
+    # TODO: Add clear cache button
     force_data_refresh()
     display_memory_usage()
 
