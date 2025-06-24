@@ -1,9 +1,11 @@
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
+from datetime import datetime
 import pandas as pd
 import xarray as xr
 
 import yfinance as yf
+import pandas_datareader.data as pdr
 
 from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
 from risk_dates import business_days_ago #, latest_business_day
@@ -19,13 +21,60 @@ def get_yahoo_data(ticker, field_name):
     return yf.download(ticker, auto_adjust=False)[field_name].squeeze()
 
 
-def get_yahoo_data_set(tickers, field_name, asset_names=None, batch=False):
+def get_yahoo_data_set(tickers: Iterable[str], 
+                       field_name:str = 'Close', 
+                       asset_names: Optional[Iterable[str]] = None, 
+                       auto_adjust:bool = True, 
+                       batch:bool = False):
     # TODO: Possibly save time by sending yfinance full list of tickers instead of looping
+    # TODO: Consider renaming to get_yfinance_series_set
+    # TODO: Troubleshoot any batching problems; 
+    #       consider manually batching with parallelization 
+    #       and `retry_with_backoff` decorator
+    # TODO: Fix type error
     if asset_names is None:
-        asset_names = tickers    
-    return (pd.DataFrame({asset_name: get_yahoo_data(ticker, field_name) 
-                         for asset_name, ticker in zip(asset_names, tickers)})
-            .rename_axis(index='date', columns='factor_name'))
+        asset_names = tickers
+    if batch:
+        ticker_map = dict(zip(tickers, asset_names))
+        df =  (yf.download(list(tickers), auto_adjust=auto_adjust)[field_name]
+               .rename_axis(index='date', columns='ticker')
+               .rename(columns=ticker_map)
+               )
+    else:
+        df = (pd.DataFrame({asset_name: get_yahoo_data(ticker, field_name) 
+                            for asset_name, ticker in zip(asset_names, tickers)})
+              .rename_axis(index='date', columns='factor_name'))
+    return df
+
+
+
+def get_fred_data_set(
+    tickers: str | List[str],
+    factor_names: Optional[str | List[str]] = None,
+    start: Optional[str | datetime] = None,
+    end: Optional[str | datetime] = None
+) -> pd.DataFrame:
+    """
+    Downloads multiple FRED series as a DataFrame.
+
+    Parameters:
+        tickers (List[str]): List of FRED tickers (e.g., ["USEPUINDXD", "GDP"]).
+        start (str | datetime | None): Start date (default: None = full history).
+        end (str | datetime | None): End date (default: today).
+
+    Returns:
+        pd.DataFrame: DataFrame with datetime index and one column per ticker.
+    """
+    if isinstance(tickers, str):
+        tickers = [tickers]
+    if isinstance(factor_names, str):
+        factor_names = [factor_names]
+    if factor_names is None:
+        factor_names = tickers
+    return pd.concat({factor_name: pdr.DataReader(ticker, "fred", start=start, end=end).squeeze()
+                      for factor_name, ticker in zip(factor_names, tickers)},
+                     axis=1)
+
 
 
 # deprecated
@@ -158,10 +207,11 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
 
     # Get yahoo returns:
     factor_list_yf = factor_master.query("source=='yfinance'").index
-    print(f'Downloading {len(factor_list_yf)} yfinance factors')
-    levels_yf = (get_yahoo_data_set(asset_names = factor_list_yf.tolist(), 
-                                    tickers = factor_master.loc[factor_list_yf, 'ticker'],
-                                    field_name = 'Adj Close')
+    print(f'Downloading {len(factor_list_yf)} yfinance factor{"s" if len(factor_list_yf) != 1 else ""}')
+    levels_yf = (get_yahoo_data_set(asset_names=factor_list_yf.tolist(), 
+                                    tickers=factor_master.loc[factor_list_yf, 'ticker'],
+                                    # field_name='Close',
+                                    batch=True)
                  .pipe(align_dates, ['SPY'])
                  )
 
@@ -171,6 +221,17 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
                                    multiplier_map=multiplier_map)
     # ret_list = [ret_yf]
     factor_returns = ret_yf
+
+    # Get FRED returns:
+    factor_list_fred = factor_master.query("source=='fred'").index
+    print(f'Downloading {len(factor_list_fred)} FRED factor{"s" if len(factor_list_fred) != 1 else ""}')
+    levels_fred = (get_fred_data_set(factor_names = factor_list_fred,
+                                     tickers = factor_master.loc[factor_list_fred, 'ticker']))
+    ret_fred = calculate_returns_set(levels_fred, 
+                                     periods=1,
+                                     diffusion_map=diffusion_map, 
+                                     multiplier_map=multiplier_map)
+    factor_returns = factor_returns.join(ret_fred)
 
     def smart_dot(returns: pd.DataFrame, composite_weights: pd.DataFrame) -> pd.DataFrame:
         """Matrix multiplication peformed for each composite factor avoid unnecessary NaNs."""
@@ -185,7 +246,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     # Get composite returns 
     # `Composites` are those portfolios defined in factor_master.xlsx
     factor_list_composite = factor_master.query("source=='composite'").index
-    print(f'Building {len(factor_list_composite)} composite factors')
+    print(f'Building {len(factor_list_composite)} composite factor{"s" if len(factor_list_composite) != 1 else ""}')
     if not factor_list_composite.empty:
         composite_weights = (get_factor_composites()
                             #   .loc[factor_list_composite]
@@ -201,7 +262,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     # Get portfolio returns:
     # `Portfolios` are those portfolios defined in risk_config_port.py
     factor_list_portfolios = factor_master.query("source=='portfolio'").index
-    print(f'Building {len(factor_list_portfolios)} portfolio factors')
+    print(f'Building {len(factor_list_portfolios)} portfolio factor{"s" if len(factor_list_portfolios) != 1 else ""}')
     if not factor_list_portfolios.empty:
         rebalancing_dates = factor_returns.resample('M').last().index
         portfolio_returns, portfolio_weights_long = build_all_portfolios(portfolios, factor_returns, rebalancing_dates)
