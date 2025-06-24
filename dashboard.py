@@ -1,3 +1,5 @@
+from memory_profiler import profile
+
 # from configure_sys_path import add_project_root_to_sys_path #, set_cwd_to_project_root,
 # add_project_root_to_sys_path()
 # set_cwd_to_project_root()
@@ -18,11 +20,24 @@ from dashboard_master      import build_dashboard as master
 from dashboard_regime      import build_dashboard as regime
 from dashboard_event_study import build_dashboard as event_study
 from dashboard_breakdown   import build_dashboard as breakdown
+from dashboard_reports     import build_dashboard as reports
 
 # TODO: Update streamlit `[theme]` section of `.streamlit/config.toml` file to match `plotly_white` colors
 
+# st.markdown("""
+#     <style>
+#     html, body, [class*="css"] {
+#         font-family: 'Open Sans', sans-serif;
+#     }
+#     </style>
+# """, unsafe_allow_html=True)
+
+import plotly.io as pio
+pio.templates["plotly_white"].layout.font.family = "Segoe UI"
+
 with st.spinner("Constructing factors..."):
     factor_data = get_factor_data()
+    # factor_data = get_factor_data(read_cache=True, check=None)
 
 pg = st.navigation([
                     st.Page(lambda: time_series(factor_data), 
@@ -68,6 +83,10 @@ pg = st.navigation([
                     st.Page(lambda: breakdown(factor_data),
                             title='Covariance Breakdown',
                             url_path='breakdown'),
+                    
+                    st.Page(lambda: reports(factor_data),
+                            title='Reports',
+                            url_path='reports')
                     ])
 
 # add_sidebar_defaults()
