@@ -1,7 +1,6 @@
 import streamlit as st
 
 from risk_data import get_factor_data
-from risk_dates import format_date
 from risk_market_feedback import draw_market_feedback_scatter
 from risk_config import HALFLIFES
 from dashboard_interface import add_sidebar_defaults, select_date_window
@@ -20,7 +19,7 @@ def build_dashboard(factor_data):
         col1, col2 = st.columns([1, 1])
         vol_type     = col1.selectbox('Volatility Halflife', options=model_options, index=model_default)
         corr_type    = col2.selectbox('Correlation Halflife', options=model_options, index=model_default)
-        include_themes     = st.toggle('Include Themes',     value=False)
+        include_themes     = st.toggle('Include Themes',     value=True)
         include_portfolios = st.toggle('Include Portfolios', value=False)
 
     exclude = []
@@ -29,7 +28,7 @@ def build_dashboard(factor_data):
     if not include_portfolios:
         exclude.append('Portfolio')
 
-    return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
+    return_title = None #f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
     fig = draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title, exclude)
 
     st.write(fig)

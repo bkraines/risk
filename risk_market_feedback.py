@@ -7,11 +7,18 @@ import xarray as xr
 from risk_data import get_factor_master
 from risk_stats import total_return
 from risk_chart import px_scatter, px_write
+from risk_dates import format_date
+
 
 # TODO: Add chart of showing correlation at t and t-n
 
-def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title, exclude_asset_classes):
+def draw_market_feedback_scatter(factor_data, return_start, return_end, vol_type, corr_type, corr_asset, return_title=None, exclude_asset_classes=None):
     # TODO: Rename 'asset' to 'factor' in dataframe
+    
+    if exclude_asset_classes is None:
+        exclude_asset_classes = []
+    if return_title is None:
+        return_title = f'Returns from {format_date(return_start)} to {format_date(return_end)} (std)'
     
     ndays = factor_data['cret'].sel(date=slice(return_start, return_end)).date.size - 1  # - 1
     corr  = (factor_data['corr']

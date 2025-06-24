@@ -157,6 +157,7 @@ def plot_dual_axis(series1: pd.Series, series2: pd.Series,
     """
     # TODO: Clean up this ChatGPT output
     # TODO: Draw primary line with `px_line` to inherit formatting
+    # TODO: Support different templates
     
     # Get default Plotly color sequence
     default_colors = pio.templates['plotly_white'].layout.colorway
