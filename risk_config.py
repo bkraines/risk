@@ -41,6 +41,7 @@ ROLLING_WINDOWS: dict[str, int] = {
 HISTORICAL_WINDOWS: dict[str, tuple[datetime, datetime]] = {
     "Trade War Selloff (2025)":  (datetime(2025,  3, 31), datetime(2025, 4, 21)),
     "Trade War Rally (2025)":    (datetime(2025,  4, 21), datetime(2025, 5, 16)),
+    "Iran War (day 1)":          (datetime(2025,  6, 12), datetime(2025, 6, 13)),
     
     "GFC (2008)":           (datetime(2007, 10,  1), datetime(2009, 3,  9)),
     "Eurozone Crisis":      (datetime(2011,  7,  1), datetime(2012, 9,  1)),
