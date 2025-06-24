@@ -54,23 +54,27 @@ def build_monitor_table(factor_data: xr.Dataset, vol_type) -> pd.DataFrame:
 def build_dashboard(factor_data, table_config=None):
     # TODO: Use Ag-grid instead of streamlit for better customization
     # TODO: Incorporate column color into table_config. Generalize `style_zscore_abs`.
+    # TODO: Pick a date interval
 
     if table_config is None:
         table_config = TABLE_CONFIG
     model_options = HALFLIFES
     model_default = model_options.index(63) if 63 in model_options else 0
-    
+
+    latest_date = pd.to_datetime(factor_data.date.max().values)
+    earliest_date = pd.to_datetime(factor_data.date.min().values)
     with st.sidebar:
         # corr_asset   = st.selectbox('Correlation Asset', options=factor_list, index=0)
         # return_start, return_end = select_date_range(factor_data.indexes['date'], default_option='MTD')
+        return_end   = st.date_input('Close', value=latest_date, min_value=earliest_date, max_value=latest_date)
         vol_type     = st.selectbox('Volatility Halflife', options=model_options, index=model_default)
         # corr_type    = st.selectbox('Correlation Halflife', options=model_options, index=model_default)
     
     def style_zscore_abs(col):
         """Applies gray text color style to the zscore_abs column."""
         return ['color: lightgray'] * len(col) # You can also use 'lightgray' or a hex code like '#808080'
-    
-    df = build_monitor_table(factor_data, vol_type)
+
+    df = build_monitor_table(factor_data.sel(date=slice(None, return_end)), vol_type)
     st.write(df.name)
     styler = df.style.apply(style_zscore_abs, subset=['zscore_abs'])
     column_config = {column: st.column_config.NumberColumn(label=config["name"], 
