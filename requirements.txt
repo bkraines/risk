@@ -15,6 +15,9 @@ yfinance>=0.2.59    # Use latest version for when Yahoo changes API
 streamlit
 dask[complete]
 arraylake[icechunk,xarray,virtual]
+pandas_datareader
 # eofs
 # hvplot
 # arch
+# pandas_datareader-0.10.0 # For NBER recession data
+# memory_profiler
