@@ -59,4 +59,12 @@ PORTFOLIOS = OrderedDict({
             # Initial weights will be set dynamically
         },
     },
+    "Tracking_BTC_vol": {
+        "function_to_call": "TRACK",
+        "ticker_subset": ['^VIX', 'BTC', 'SPY', 'GLD', '^GVZ', '^OVX'],
+        "other_options": {
+            "target_portfolio_name": 'BTC_vol',
+            # Initial weights will be set dynamically
+        },
+    },
 })
