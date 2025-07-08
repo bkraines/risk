@@ -26,7 +26,6 @@ def get_yahoo_data_set(tickers: Iterable[str],
                        asset_names: Optional[Iterable[str]] = None, 
                        auto_adjust:bool = True, 
                        batch:bool = False):
-    # TODO: Possibly save time by sending yfinance full list of tickers instead of looping
     # TODO: Consider renaming to get_yfinance_series_set
     # TODO: Troubleshoot any batching problems; 
     #       consider manually batching with parallelization 
@@ -76,31 +75,53 @@ def get_fred_data_set(
                      axis=1)
 
 
-
-# deprecated
-def get_yf_data(asset_list: List[str]) -> xr.DataArray:
-    # TODO: Name the returned datarray 'ohlcv'?
-    df = (yf.download(asset_list, auto_adjust=False)
-            .rename_axis(index='date', columns=['ohlcv_type', 'asset'])
-            .rename(index={'Ticker': 'asset'})
-            .rename(columns=lambda col: col.lower(), level='ohlcv_type')
-            # .stack(['asset', 'ohlcv_type'], future_stack=True) # Convert assetst to categorical first
-            .stack(['ohlcv_type'], future_stack=True)
-            .loc[:, asset_list]
-            )
-    df.columns = pd.CategoricalIndex(df.columns, categories=asset_list, ordered=True)
-    ds = df.stack().to_xarray()
-    assert isinstance(ds, xr.DataArray), f"Expected DataArray, got {type(ds)}"
-    return ds
+def read_factors_lmxl(file_name:  str = 'ThemeTracker_combined.xlsx', 
+                      sheet_name: str = 'TimeSeries', 
+                      index_col:  str = 'Date') -> pd.DataFrame:
+    df = (pd.read_excel(file_name, sheet_name=sheet_name, index_col=index_col)
+          .rename_axis(index='date', columns='factor_name'))
+    df.columns = pd.CategoricalIndex(df.columns, ordered=True, categories=df.columns)
+    return df
 
 
-def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
-    # TODO: Combine with get_factor_data
-    ds = xr.Dataset()
-    ds['ohlcv'] = get_yf_data(asset_list)
-    ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
-    ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
-    return ds
+def get_lmxl_data_set(tickers: str | list[str],
+                      factor_names: str | list[str] | None = None) -> pd.DataFrame:
+    if isinstance(tickers, str):
+        tickers = [tickers]
+    if isinstance(factor_names, str):
+        factor_names = [factor_names]
+    if factor_names is None:
+        factor_names = tickers
+    ticker_to_factor_map = dict(zip(tickers, factor_names))
+
+    df = read_factors_lmxl()
+    return df[tickers].rename(columns=ticker_to_factor_map)
+
+
+# # deprecated
+# def get_yf_data(asset_list: List[str]) -> xr.DataArray:
+#     # TODO: Name the returned datarray 'ohlcv'?
+#     df = (yf.download(asset_list, auto_adjust=False)
+#             .rename_axis(index='date', columns=['ohlcv_type', 'asset'])
+#             .rename(index={'Ticker': 'asset'})
+#             .rename(columns=lambda col: col.lower(), level='ohlcv_type')
+#             # .stack(['asset', 'ohlcv_type'], future_stack=True) # Convert assetst to categorical first
+#             .stack(['ohlcv_type'], future_stack=True)
+#             .loc[:, asset_list]
+#             )
+#     df.columns = pd.CategoricalIndex(df.columns, categories=asset_list, ordered=True)
+#     ds = df.stack().to_xarray()
+#     assert isinstance(ds, xr.DataArray), f"Expected DataArray, got {type(ds)}"
+#     return ds
+
+# # deprecated
+# def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
+#     # TODO: Combine with get_factor_data
+#     ds = xr.Dataset()
+#     ds['ohlcv'] = get_yf_data(asset_list)
+#     ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
+#     ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
+#     return ds
 
 
 def get_portfolio_master(portfolios: dict):
@@ -136,7 +157,7 @@ def build_factor_master(portfolios: Optional[dict] = None, **kwargs) -> pd.DataF
     if portfolios is not None:
         portfolio_master = get_portfolio_master(portfolios)
         factor_master = (pd.concat([factor_master, portfolio_master])
-            .rename_axis(factor_master.index.name))
+                         .rename_axis(factor_master.index.name))
     return factor_master
 
 
@@ -211,7 +232,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     levels_yf = (get_yahoo_data_set(asset_names=factor_list_yf.tolist(), 
                                     tickers=factor_master.loc[factor_list_yf, 'ticker'],
                                     # field_name='Close',
-                                    batch=True)
+                                    batch=False)
                  .pipe(align_dates, ['SPY'])
                  )
 
@@ -221,6 +242,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
                                    multiplier_map=multiplier_map)
     # ret_list = [ret_yf]
     factor_returns = ret_yf
+
 
     # Get FRED returns:
     factor_list_fred = factor_master.query("source=='fred'").index
@@ -232,6 +254,20 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
                                      diffusion_map=diffusion_map, 
                                      multiplier_map=multiplier_map)
     factor_returns = factor_returns.join(ret_fred)
+
+
+    # Get LMXL returns:
+    factor_list_lmxl = factor_master.query("source=='lmxl'").index
+    print(f'Downloading {len(factor_list_lmxl)} LMXL factor{"s" if len(factor_list_lmxl) != 1 else ""}')
+    levels_lmxl = get_lmxl_data_set(factor_names=factor_list_lmxl,
+                                    tickers = factor_master.loc[factor_list_lmxl, 'ticker'])
+    ret_lmxl = calculate_returns_set(levels_lmxl,
+                                     periods=1,
+                                     diffusion_map=diffusion_map, 
+                                     multiplier_map=multiplier_map)
+    factor_returns = factor_returns.join(ret_lmxl)
+        
+    
 
     def smart_dot(returns: pd.DataFrame, composite_weights: pd.DataFrame) -> pd.DataFrame:
         """Matrix multiplication peformed for each composite factor avoid unnecessary NaNs."""
