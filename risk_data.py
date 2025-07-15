@@ -1,3 +1,4 @@
+# from memory_profiler import profile
 from typing import Iterable, List, Optional
 
 from datetime import datetime
@@ -22,10 +23,10 @@ def get_yahoo_data(ticker, field_name):
 
 
 def get_yahoo_data_set(tickers: Iterable[str], 
-                       field_name:str = 'Close', 
+                       field_name: str = 'Close', 
                        asset_names: Optional[Iterable[str]] = None, 
-                       auto_adjust:bool = True, 
-                       batch:bool = False):
+                       auto_adjust: bool = True, 
+                       batch: bool = False):
     # TODO: Consider renaming to get_yfinance_series_set
     # TODO: Troubleshoot any batching problems; 
     #       consider manually batching with parallelization 
@@ -214,6 +215,7 @@ def is_data_current(ds: xr.Dataset) -> bool:
 
 
 @cache(CACHE_TARGET)
+# @profile
 def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PORTFOLIOS) -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
@@ -232,7 +234,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     levels_yf = (get_yahoo_data_set(asset_names=factor_list_yf.tolist(), 
                                     tickers=factor_master.loc[factor_list_yf, 'ticker'],
                                     # field_name='Close',
-                                    batch=False)
+                                    batch=True) # CHANGED
                  .pipe(align_dates, ['SPY'])
                  )
 
