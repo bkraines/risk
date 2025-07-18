@@ -22,6 +22,7 @@ def build_dashboard(factor_data: Optional[xr.Dataset] = None):
     factor_master = get_factor_master(factor_data).pipe(move_columns_to_front, first_columns)
     composites = get_factor_composites().unstack().rename('weight').to_frame()[lambda x: x != 0].dropna()
     
+    st.components.v1.html(factor_data._repr_html_(), height=600, scrolling=True)
     st.dataframe(composites, height=500)
     st.dataframe(factor_master, height=3000)
     add_hyperlinks()
