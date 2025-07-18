@@ -9,10 +9,10 @@ import yfinance as yf
 import pandas_datareader.data as pdr
 
 from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
-from risk_dates import business_days_ago #, latest_business_day
-from risk_util import xr_pct_change, safe_reindex, cache, convert_df_to_json, trim_leading_zeros
-from risk_stats import align_dates, calculate_returns_set, get_statistics_set
 from risk_config_port import PORTFOLIOS
+from risk_dates import business_days_ago #, latest_business_day
+from risk_util import safe_reindex, cache, convert_df_to_json, trim_leading_zeros
+from risk_stats import align_dates, calculate_returns_set, get_statistics_set, smart_dot
 from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
 
 
@@ -222,11 +222,12 @@ def is_data_current(ds: xr.Dataset) -> bool:
 def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PORTFOLIOS) -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
-    # TODO: Extract returns from yahoo, composites, and portfolios into separate functions
+    # TODO: Extract returns from yahoo, composites, and portfolios into single functions
+    #       Concatenate levels from each source, then calculate returns, then multiply for composites
     # TODO: Add timing to console logs
     # TODO: Enforce data variable and coordinate order in xarray Dataset
     # TODO: Replace 'composite==1' with 'source=="composite"' in factor_master
-    # TODO: Extract statistics function into `risk_stats.py` 
+    #       (This should be done. Check that `factor_master['composite']` is not used elsewhere.)
     factor_master = get_factor_master(file_name='factor_master.xlsx', sheet_name=factor_set, portfolios=portfolios)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
@@ -240,50 +241,46 @@ def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PO
                                     batch=True)
                  .pipe(align_dates, ['SPY'])
                  )
-
-    ret_yf = calculate_returns_set(levels_yf, 
-                                   periods=1,
-                                   diffusion_map=diffusion_map, 
-                                   multiplier_map=multiplier_map)
-    # ret_list = [ret_yf]
-    factor_returns = ret_yf
-
+    # ret_yf = calculate_returns_set(levels_yf, 
+    #                                periods=1,
+    #                                diffusion_map=diffusion_map, 
+    #                                multiplier_map=multiplier_map)
+    # factor_returns = ret_yf
+    levels = levels_yf
 
     # Get FRED returns:
     factor_list_fred = factor_master.query("source=='fred'").index
     print(f'Downloading {len(factor_list_fred)} FRED factor{"s" if len(factor_list_fred) != 1 else ""}')
-    levels_fred = (get_fred_data_set(factor_names = factor_list_fred,
-                                     tickers = factor_master.loc[factor_list_fred, 'ticker']))
-    ret_fred = calculate_returns_set(levels_fred, 
-                                     periods=1,
-                                     diffusion_map=diffusion_map, 
-                                     multiplier_map=multiplier_map)
-    factor_returns = factor_returns.join(ret_fred)
-
+    levels_fred = (get_fred_data_set(factor_names=factor_list_fred,
+                                     tickers=factor_master.loc[factor_list_fred, 'ticker'])
+                   # .pipe(align_dates, ['SPY'])  # TODO: Include this?
+                   )
+    levels = levels.join(levels_fred)    
+    # ret_fred = calculate_returns_set(levels_fred, 
+    #                                  periods=1,
+    #                                  diffusion_map=diffusion_map, 
+    #                                  multiplier_map=multiplier_map)
+    # factor_returns = factor_returns.join(ret_fred)
 
     # Get LMXL returns:
     factor_list_lmxl = factor_master.query("source=='lmxl'").index
     print(f'Downloading {len(factor_list_lmxl)} LMXL factor{"s" if len(factor_list_lmxl) != 1 else ""}')
-    levels_lmxl = get_lmxl_data_set(factor_names=factor_list_lmxl,
-                                    tickers = factor_master.loc[factor_list_lmxl, 'ticker'])
-    ret_lmxl = calculate_returns_set(levels_lmxl,
-                                     periods=1,
-                                     diffusion_map=diffusion_map, 
-                                     multiplier_map=multiplier_map)
-    factor_returns = factor_returns.join(ret_lmxl)
-        
-    
+    levels_lmxl = (get_lmxl_data_set(factor_names=factor_list_lmxl,
+                                     tickers=factor_master.loc[factor_list_lmxl, 'ticker'])
+                   # .pipe(align_dates, ['SPY'])  # TODO: Include this?
+                   )
+    levels = levels.join(levels_lmxl)
+    # ret_lmxl = calculate_returns_set(levels_lmxl,
+    #                                  periods=1,
+    #                                  diffusion_map=diffusion_map, 
+    #                                  multiplier_map=multiplier_map)
+    # factor_returns = factor_returns.join(ret_lmxl)
 
-    def smart_dot(returns: pd.DataFrame, composite_weights: pd.DataFrame) -> pd.DataFrame:
-        """Matrix multiplication peformed for each composite factor avoid unnecessary NaNs."""
-        # TODO: Generalize to arbitrary matrix multiplication
-        dict_f = {}
-        for factor, weights in composite_weights.items():
-            weights_f = weights[weights!=0]
-            returns_f = returns[weights_f.index].dropna()
-            dict_f[factor] = returns_f @ weights_f
-        return pd.concat(dict_f, axis=1)
-    
+    factor_returns = calculate_returns_set(levels,
+                                           periods=1,
+                                           diffusion_map=diffusion_map, 
+                                           multiplier_map=multiplier_map)
+
     # Get composite returns 
     # `Composites` are those portfolios defined in factor_master.xlsx
     factor_list_composite = factor_master.query("source=='composite'").index
@@ -296,6 +293,8 @@ def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PO
                             .loc[factor_list_yf]
                             )
         # composite_ret = ret_yf @ composite_weights
+        # TODO: Multiply on full factor_returns, not just ret_yf
+        ret_yf = factor_returns[factor_list_yf]
         composite_ret = smart_dot(ret_yf, composite_weights)
         # ret_list.append(portfolios_ret)
         factor_returns = pd.concat([factor_returns, composite_ret], axis=1)
@@ -314,6 +313,7 @@ def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PO
     print('Calculating factor statistics')
     levels_latest = levels_yf.iloc[-1]
     factor_data = get_statistics_set(factor_returns, factor_master, levels_latest, halflifes)
+    
     if not factor_list_portfolios.empty:
         factor_data['portfolio_weights'] = portfolio_weights_to_xarray(portfolio_weights_long)
         # Zarr only accepts JSON-serializable attributes, but `portfolios` contains a pd.DataFrame:
