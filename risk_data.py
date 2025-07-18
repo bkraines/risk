@@ -217,65 +217,40 @@ def is_data_current(ds: xr.Dataset) -> bool:
     # return latest_data_date >= latest_business_date
 
 
+def get_levels(factor_master, source_function_map):
+    levels_list = []
+    for source, func in source_function_map.items():
+        factor_list = factor_master.query(f"source=='{source}'").index
+        if len(factor_list) == 0:
+            continue
+        print(f"Downloading {len(factor_list)} {source.upper()} factor{'s' if len(factor_list) != 1 else ''}")
+        tickers = factor_master.loc[factor_list, 'ticker']
+        levels = func(factor_list, tickers)
+        levels_list.append(levels)
+    return (pd.concat(levels_list, axis=1)
+            .pipe(align_dates, ['SPY']))
+
+
 @cache(CACHE_TARGET)
 # @profile
 def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PORTFOLIOS) -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
-    # TODO: Extract returns from yahoo, composites, and portfolios into single functions
-    #       Concatenate levels from each source, then calculate returns, then multiply for composites
     # TODO: Add timing to console logs
     # TODO: Enforce data variable and coordinate order in xarray Dataset
     # TODO: Replace 'composite==1' with 'source=="composite"' in factor_master
-    #       (This should be done. Check that `factor_master['composite']` is not used elsewhere.)
+    #       (This is already done? Check that `factor_master['composite']` is not used elsewhere.)
     factor_master = get_factor_master(file_name='factor_master.xlsx', sheet_name=factor_set, portfolios=portfolios)
-    factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
     multiplier_map = factor_master['multiplier']
 
-    # Get yahoo returns:
-    factor_list_yf = factor_master.query("source=='yfinance'").index
-    print(f'Downloading {len(factor_list_yf)} yfinance factor{"s" if len(factor_list_yf) != 1 else ""}')
-    levels_yf = (get_yahoo_data_set(asset_names=factor_list_yf.tolist(), 
-                                    tickers=factor_master.loc[factor_list_yf, 'ticker'],
-                                    batch=True)
-                 .pipe(align_dates, ['SPY'])
-                 )
-    # ret_yf = calculate_returns_set(levels_yf, 
-    #                                periods=1,
-    #                                diffusion_map=diffusion_map, 
-    #                                multiplier_map=multiplier_map)
-    # factor_returns = ret_yf
-    levels = levels_yf
-
-    # Get FRED returns:
-    factor_list_fred = factor_master.query("source=='fred'").index
-    print(f'Downloading {len(factor_list_fred)} FRED factor{"s" if len(factor_list_fred) != 1 else ""}')
-    levels_fred = (get_fred_data_set(factor_names=factor_list_fred,
-                                     tickers=factor_master.loc[factor_list_fred, 'ticker'])
-                   # .pipe(align_dates, ['SPY'])  # TODO: Include this?
-                   )
-    levels = levels.join(levels_fred)    
-    # ret_fred = calculate_returns_set(levels_fred, 
-    #                                  periods=1,
-    #                                  diffusion_map=diffusion_map, 
-    #                                  multiplier_map=multiplier_map)
-    # factor_returns = factor_returns.join(ret_fred)
-
-    # Get LMXL returns:
-    factor_list_lmxl = factor_master.query("source=='lmxl'").index
-    print(f'Downloading {len(factor_list_lmxl)} LMXL factor{"s" if len(factor_list_lmxl) != 1 else ""}')
-    levels_lmxl = (get_lmxl_data_set(factor_names=factor_list_lmxl,
-                                     tickers=factor_master.loc[factor_list_lmxl, 'ticker'])
-                   # .pipe(align_dates, ['SPY'])  # TODO: Include this?
-                   )
-    levels = levels.join(levels_lmxl)
-    # ret_lmxl = calculate_returns_set(levels_lmxl,
-    #                                  periods=1,
-    #                                  diffusion_map=diffusion_map, 
-    #                                  multiplier_map=multiplier_map)
-    # factor_returns = factor_returns.join(ret_lmxl)
-
+    # Get yfinance, FRED, and LMXL returns
+    source_function_map = {
+        'yfinance': lambda factor_list, tickers: get_yahoo_data_set(asset_names=factor_list.tolist(), tickers=tickers, batch=True),
+        'fred':     lambda factor_list, tickers: get_fred_data_set(factor_names=factor_list, tickers=tickers),
+        'lmxl':     lambda factor_list, tickers: get_lmxl_data_set(factor_names=factor_list, tickers=tickers)
+    }
+    levels = get_levels(factor_master, source_function_map)
     factor_returns = calculate_returns_set(levels,
                                            periods=1,
                                            diffusion_map=diffusion_map, 
@@ -285,6 +260,12 @@ def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PO
     # `Composites` are those portfolios defined in factor_master.xlsx
     factor_list_composite = factor_master.query("source=='composite'").index
     print(f'Building {len(factor_list_composite)} composite factor{"s" if len(factor_list_composite) != 1 else ""}')
+    
+    # TODO: Multiply on full factor_returns, not just ret_yf
+    factor_list_yf = factor_master.query("source=='yfinance'").index
+    ret_yf = factor_returns[factor_list_yf]
+    levels_yf = levels[factor_list_yf]
+    
     if not factor_list_composite.empty:
         composite_weights = (get_factor_composites()
                             #   .loc[factor_list_composite]
@@ -292,11 +273,7 @@ def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PO
                             .fillna(0)
                             .loc[factor_list_yf]
                             )
-        # composite_ret = ret_yf @ composite_weights
-        # TODO: Multiply on full factor_returns, not just ret_yf
-        ret_yf = factor_returns[factor_list_yf]
         composite_ret = smart_dot(ret_yf, composite_weights)
-        # ret_list.append(portfolios_ret)
         factor_returns = pd.concat([factor_returns, composite_ret], axis=1)
     
     # Get portfolio returns:
