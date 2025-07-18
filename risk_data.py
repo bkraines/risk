@@ -1,5 +1,5 @@
 # from memory_profiler import profile
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 from datetime import datetime
 import pandas as pd
@@ -11,7 +11,7 @@ import pandas_datareader.data as pdr
 from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
 from risk_dates import business_days_ago #, latest_business_day
 from risk_util import xr_pct_change, safe_reindex, cache, convert_df_to_json, trim_leading_zeros
-from risk_stats import align_dates, calculate_returns_set, accumulate_returns_set, get_volatility_set, get_correlation_set
+from risk_stats import align_dates, calculate_returns_set, get_statistics_set
 from risk_config_port import PORTFOLIOS
 from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
 
@@ -52,8 +52,8 @@ def get_yahoo_data_set(tickers: Iterable[str],
 
 
 def get_fred_data_set(
-    tickers: str | List[str],
-    factor_names: Optional[str | List[str]] = None,
+    tickers: str | list[str],
+    factor_names: Optional[str | list[str]] = None,
     start: Optional[str | datetime] = None,
     end: Optional[str | datetime] = None
 ) -> pd.DataFrame:
@@ -61,7 +61,7 @@ def get_fred_data_set(
     Downloads multiple FRED series as a DataFrame.
 
     Parameters:
-        tickers (List[str]): List of FRED tickers (e.g., ["USEPUINDXD", "GDP"]).
+        tickers (list[str]): list of FRED tickers (e.g., ["USEPUINDXD", "GDP"]).
         start (str | datetime | None): Start date (default: None = full history).
         end (str | datetime | None): End date (default: today).
 
@@ -103,7 +103,7 @@ def get_lmxl_data_set(tickers: str | list[str],
 
 
 # # deprecated
-# def get_yf_data(asset_list: List[str]) -> xr.DataArray:
+# def get_yf_data(asset_list: list[str]) -> xr.DataArray:
 #     # TODO: Name the returned datarray 'ohlcv'?
 #     df = (yf.download(asset_list, auto_adjust=False)
 #             .rename_axis(index='date', columns=['ohlcv_type', 'asset'])
@@ -119,7 +119,7 @@ def get_lmxl_data_set(tickers: str | list[str],
 #     return ds
 
 # # deprecated
-# def get_yf_returns(asset_list: List[str]) -> xr.Dataset:
+# def get_yf_returns(asset_list: list[str]) -> xr.Dataset:
 #     # TODO: Combine with get_factor_data
 #     ds = xr.Dataset()
 #     ds['ohlcv'] = get_yf_data(asset_list)
@@ -219,13 +219,14 @@ def is_data_current(ds: xr.Dataset) -> bool:
 
 @cache(CACHE_TARGET)
 # @profile
-def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PORTFOLIOS) -> xr.Dataset:
+def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PORTFOLIOS) -> xr.Dataset:
     # TODO: Consider renaming to `_get_factor_data`
     # TODO: Check vol units
-    # TODO: Refactor returns from yahoo, composites, and portfolios into separate functions
+    # TODO: Extract returns from yahoo, composites, and portfolios into separate functions
     # TODO: Add timing to console logs
     # TODO: Enforce data variable and coordinate order in xarray Dataset
     # TODO: Replace 'composite==1' with 'source=="composite"' in factor_master
+    # TODO: Extract statistics function into `risk_stats.py` 
     factor_master = get_factor_master(file_name='factor_master.xlsx', sheet_name=factor_set, portfolios=portfolios)
     factor_list = factor_master.index
     diffusion_map = factor_master['diffusion_type']
@@ -236,8 +237,7 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
     print(f'Downloading {len(factor_list_yf)} yfinance factor{"s" if len(factor_list_yf) != 1 else ""}')
     levels_yf = (get_yahoo_data_set(asset_names=factor_list_yf.tolist(), 
                                     tickers=factor_master.loc[factor_list_yf, 'ticker'],
-                                    # field_name='Close',
-                                    batch=True) # CHANGED
+                                    batch=True)
                  .pipe(align_dates, ['SPY'])
                  )
 
@@ -313,19 +313,13 @@ def build_factor_data(halflifes: List[int], factor_set=FACTOR_SET, portfolios=PO
 
     print('Calculating factor statistics')
     levels_latest = levels_yf.iloc[-1]
-    factor_data = xr.Dataset()
-    # factor_data['ret']  = pd.concat(ret_list, axis=1).rename_axis(columns='factor_name')
-    factor_data['ret']  = factor_returns.rename_axis(columns='factor_name')
-    factor_data['cret'] = accumulate_returns_set(factor_data['ret'].to_pandas(), diffusion_map, levels_latest, multiplier_map)
-    factor_data['vol']  = get_volatility_set(factor_data['ret'], halflifes)
-    factor_data['corr'] = get_correlation_set(factor_data['ret'], halflifes)
-    factor_data['factor_name'].attrs = factor_master.T.to_dict()
+    factor_data = get_statistics_set(factor_returns, factor_master, levels_latest, halflifes)
     if not factor_list_portfolios.empty:
         factor_data['portfolio_weights'] = portfolio_weights_to_xarray(portfolio_weights_long)
         # Zarr only accepts JSON-serializable attributes, but `portfolios` contains a pd.DataFrame:
         factor_data['portfolio_name'].attrs = convert_df_to_json(portfolios)
     print('Factor construction complete')
-    return factor_data #, diffusion_map, levels_latest
+    return factor_data
 
 
 def get_factor_data(**kwargs) -> xr.Dataset:

@@ -1,7 +1,9 @@
-from typing import List, Optional, TypeVar, Literal
+# from memory_profiler import profile
+
+from typing import Optional, TypeVar, Literal
 from collections.abc import Mapping
 
-from numpy import sqrt, nan
+from numpy import sqrt, nan, diag
 import pandas as pd
 import xarray as xr
 
@@ -12,6 +14,16 @@ def fill_returns(df):
     # Placeholder for more sophisticated logic
     # TODO: Don't fill sufficiently stale data
     return df.ffill()
+
+# Unused
+def pd_diag(ser: pd.Series) -> pd.DataFrame:
+    return pd.DataFrame(diag(ser), index=ser.index, columns=ser.index)
+
+# Unused
+def get_cov(vol: pd.Series, corr: pd.DataFrame) -> pd.DataFrame:
+    """Construct covariance matrix from volatilities and correlations."""
+    D = pd_diag(vol)
+    return D @ corr @ D
 
 
 def get_business_days(df, factor_names):
@@ -139,7 +151,7 @@ def accumulate_returns_old(da_ret: xr.DataArray, dim: str = 'date') -> xr.DataAr
     )
 
 
-def get_volatility_set_new(cret: xr.DataArray, halflifes: List[int], dim: str='date') -> xr.DataArray:
+def get_volatility_set_new(cret: xr.DataArray, halflifes: list[int], dim: str='date') -> xr.DataArray:
     # This is an attempt to build 5-day rolling volatilities
     periods = 1
     ret = calculate_returns(cret.to_pandas(), periods=periods).to_xarray()
@@ -148,7 +160,7 @@ def get_volatility_set_new(cret: xr.DataArray, halflifes: List[int], dim: str='d
                      dim=pd.Index(halflifes, name='vol_type'))
 
 
-def get_volatility_set(ret: xr.DataArray, halflifes: List[int], dim: str='date') -> xr.DataArray:
+def get_volatility_set(ret: xr.DataArray, halflifes: list[int], dim: str='date') -> xr.DataArray:
     # TODO: Use daily 5-day returns
     # FIXME: xr.rolling_exp() doesn't support min_periods
     return xr.concat([(ret/100).rolling_exp(window={dim: h}, window_type='halflife').std() * sqrt(252)
@@ -166,7 +178,8 @@ def get_ewm_corr(ret: xr.DataArray, halflife: int) -> xr.DataArray:
             .to_xarray())
 
 
-def get_correlation_set(ret: xr.DataArray, halflifes: List[int]) -> xr.DataArray:
+# @profile
+def get_correlation_set(ret: xr.DataArray, halflifes: list[int]) -> xr.DataArray:
     # TODO: Use daily 5-day returns
     return xr.concat([get_ewm_corr(ret, h) for h in halflifes],
                      dim=pd.Index(halflifes, name='corr_type'))
@@ -200,7 +213,7 @@ def distance_from_moving_average(cret: xr.DataArray, window: int = 200, shift: i
     return dist_ma.rename('dist_ma')
 
 
-def get_dist_ma_set(cret: xr.DataArray, windows: List[int]) -> xr.DataArray:
+def get_dist_ma_set(cret: xr.DataArray, windows: list[int]) -> xr.DataArray:
     return xr.concat([distance_from_moving_average(cret, w) 
                       for w in windows],
                      dim=pd.Index(windows, name='ma_type'))
@@ -213,7 +226,7 @@ def days_from_moving_average(cret: xr.DataArray, vol: xr.DataArray, window: int 
     return days_ma.rename('days_ma')
 
 
-def get_days_ma_set(cret: xr.DataArray, vol: xr.DataArray, windows: List[int]) -> xr.DataArray:
+def get_days_ma_set(cret: xr.DataArray, vol: xr.DataArray, windows: list[int]) -> xr.DataArray:
     return xr.concat([days_from_moving_average(cret, vol, w) 
                       for w in windows],
                      dim=pd.Index(windows, name='ma_type'))
@@ -233,6 +246,19 @@ def get_vix_regime(cret: xr.DataArray,
                         include_lowest=True  # include 0 in the first bin
                         )
     return vix_regime
+
+
+def get_statistics_set(factor_returns: pd.DataFrame, factor_master: pd.DataFrame, levels_latest: pd.DataFrame, halflifes: list[int]):
+    # TODO: Accept list of statistics to calculate
+    diffusion_map = factor_master['diffusion_type']
+    multiplier_map = factor_master['multiplier']
+    factor_data = xr.Dataset()
+    factor_data['ret']  = factor_returns.rename_axis(columns='factor_name')
+    factor_data['cret'] = accumulate_returns_set(factor_data['ret'].to_pandas(), diffusion_map, levels_latest, multiplier_map)
+    factor_data['vol']  = get_volatility_set(factor_data['ret'], halflifes)
+    factor_data['corr'] = get_correlation_set(factor_data['ret'], halflifes)
+    factor_data['factor_name'].attrs = factor_master.T.to_dict()
+    return factor_data
 
 
 def summarize(df, 
