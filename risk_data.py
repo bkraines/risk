@@ -16,29 +16,32 @@ from risk_config_port import PORTFOLIOS
 from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
 
 
-def get_yahoo_data(ticker, field_name):
+def get_yahoo_data(ticker, field_name, auto_adjust: bool = True) -> pd.Series:
     # TODO: Check cache first
     # cache.columns.get_level_values(1)
-    return yf.download(ticker, auto_adjust=False)[field_name].squeeze()
+    return yf.download(ticker, auto_adjust=auto_adjust)[field_name].squeeze()
 
 
 def get_yahoo_data_set(tickers: Iterable[str], 
                        field_name: str = 'Close', 
                        asset_names: Optional[Iterable[str]] = None, 
                        auto_adjust: bool = True, 
-                       batch: bool = False):
+                       batch: bool = False) -> pd.DataFrame:
     # TODO: Consider renaming to get_yfinance_series_set
     # TODO: Troubleshoot any batching problems; 
     #       consider manually batching with parallelization 
     #       and `retry_with_backoff` decorator
     # TODO: Fix type error
+    # TODO: If `batch=True` fails, revert to `batch=False`
     if asset_names is None:
         asset_names = tickers
     if batch:
         ticker_map = dict(zip(tickers, asset_names))
-        df =  (yf.download(list(tickers), auto_adjust=auto_adjust)[field_name]
-               .rename_axis(index='date', columns='ticker')
+        df =  (yf.download(list(tickers), auto_adjust=auto_adjust)
+               .xs(field_name, axis=1, level=0)
+               .loc[:, tickers]
                .rename(columns=ticker_map)
+               .rename_axis(index='date', columns='factor_name')
                )
     else:
         df = (pd.DataFrame({asset_name: get_yahoo_data(ticker, field_name) 
