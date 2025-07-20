@@ -224,8 +224,8 @@ def get_levels(factor_master, source_function_map):
         if len(factor_list) == 0:
             continue
         print(f"Downloading {len(factor_list)} {source.upper()} factor{'s' if len(factor_list) != 1 else ''}")
-        tickers = factor_master.loc[factor_list, 'ticker']
-        levels = func(factor_list, tickers)
+        levels = func(tickers=factor_master.loc[factor_list, 'ticker'],
+                      names=factor_list)
         levels_list.append(levels)
     return (pd.concat(levels_list, axis=1)
             .pipe(align_dates, ['SPY']))
@@ -246,9 +246,9 @@ def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PO
 
     # Get yfinance, FRED, and LMXL returns
     source_function_map = {
-        'yfinance': lambda factor_list, tickers: get_yahoo_data_set(asset_names=factor_list.tolist(), tickers=tickers, batch=True),
-        'fred':     lambda factor_list, tickers: get_fred_data_set(factor_names=factor_list, tickers=tickers),
-        'lmxl':     lambda factor_list, tickers: get_lmxl_data_set(factor_names=factor_list, tickers=tickers)
+        'yfinance': lambda tickers, names: get_yahoo_data_set(asset_names=names.tolist(), tickers=tickers, batch=True),
+        'fred':     lambda tickers, names: get_fred_data_set(factor_names=names, tickers=tickers),
+        'lmxl':     lambda tickers, names: get_lmxl_data_set(factor_names=names, tickers=tickers)
     }
     levels = get_levels(factor_master, source_function_map)
     factor_returns = calculate_returns_set(levels,
@@ -273,6 +273,7 @@ def build_factor_data(halflifes: list[int], factor_set=FACTOR_SET, portfolios=PO
                             .fillna(0)
                             .loc[factor_list_yf]
                             )
+
         composite_ret = smart_dot(ret_yf, composite_weights)
         factor_returns = pd.concat([factor_returns, composite_ret], axis=1)
     
