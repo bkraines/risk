@@ -248,7 +248,7 @@ def get_vix_regime(cret: xr.DataArray,
     return vix_regime
 
 
-def get_statistics_set(factor_returns: pd.DataFrame, factor_master: pd.DataFrame, levels_latest: pd.DataFrame, halflifes: list[int]):
+def get_statistics_set(factor_returns: pd.DataFrame, factor_master: pd.DataFrame, levels_latest: pd.DataFrame, halflifes: list[int]) -> xr.Dataset:
     # TODO: Accept list of statistics to calculate
     diffusion_map = factor_master['diffusion_type']
     multiplier_map = factor_master['multiplier']
@@ -357,3 +357,14 @@ def summarize_regime(df, groups=None, include_total=True, **kwargs):
 #         )
 #         .sort_index()
 #     )
+
+
+def smart_dot(returns: pd.DataFrame, composite_weights: pd.DataFrame) -> pd.DataFrame:
+    """Matrix multiplication peformed for each composite factor avoid unnecessary NaNs."""
+    # TODO: Generalize to arbitrary matrix multiplication
+    dict_f = {}
+    for factor, weights in composite_weights.items():
+        weights_f = weights[weights!=0]
+        returns_f = returns[weights_f.index].dropna()
+        dict_f[factor] = returns_f @ weights_f
+    return pd.concat(dict_f, axis=1)
