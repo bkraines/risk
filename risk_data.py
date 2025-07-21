@@ -38,7 +38,7 @@ def get_yahoo_data_set(tickers: Iterable[str],
     if batch:
         ticker_map = dict(zip(tickers, asset_names))
         df = (yf.download(list(tickers), auto_adjust=auto_adjust, 
-                          start='2024-01-01',
+                          start='2014-01-01',
                         #   end=datetime.today().strftime('%Y-%m-%d')
                           )
               .xs(field_name, axis=1, level=0)
