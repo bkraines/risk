@@ -37,14 +37,15 @@ def get_yahoo_data_set(tickers: Iterable[str],
         asset_names = tickers
     if batch:
         ticker_map = dict(zip(tickers, asset_names))
-        df =  (yf.download(list(tickers), auto_adjust=auto_adjust, 
-                           start='1900-01-01',
-                           end=datetime.today().strftime('%Y-%m-%d'),)
-               .xs(field_name, axis=1, level=0)
-               .loc[:, tickers]
-               .rename(columns=ticker_map)
-               .rename_axis(index='date', columns='factor_name')
-               )
+        df = (yf.download(list(tickers), auto_adjust=auto_adjust, 
+                          start='2024-01-01',
+                        #   end=datetime.today().strftime('%Y-%m-%d')
+                          )
+              .xs(field_name, axis=1, level=0)
+              .loc[:, tickers]
+              .rename(columns=ticker_map)
+              .rename_axis(index='date', columns='factor_name')
+              )
     else:
         df = (pd.DataFrame({asset_name: get_yahoo_data(ticker, field_name) 
                             for asset_name, ticker in zip(asset_names, tickers)})
