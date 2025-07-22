@@ -253,10 +253,15 @@ def get_statistics_set(factor_returns: pd.DataFrame, factor_master: pd.DataFrame
     diffusion_map = factor_master['diffusion_type']
     multiplier_map = factor_master['multiplier']
     factor_data = xr.Dataset()
+    print('Construct returns DataArray')
     factor_data['ret']  = factor_returns.rename_axis(columns='factor_name')
+    print('Construct cumulative returns DataArray')
     factor_data['cret'] = accumulate_returns_set(factor_data['ret'].to_pandas(), diffusion_map, levels_latest, multiplier_map)
+    print('Construct volatility DataArray')
     factor_data['vol']  = get_volatility_set(factor_data['ret'], halflifes)
+    print('Construct correlation DataArray')
     factor_data['corr'] = get_correlation_set(factor_data['ret'], halflifes)
+    print('Append metadata')
     factor_data['factor_name'].attrs = factor_master.T.to_dict()
     return factor_data
 

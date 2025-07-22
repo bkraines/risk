@@ -38,8 +38,9 @@ def get_yahoo_data_set(tickers: Iterable[str],
     if batch:
         ticker_map = dict(zip(tickers, asset_names))
         df = (yf.download(list(tickers), auto_adjust=auto_adjust, 
-                          start='2014-01-01',
-                        #   end=datetime.today().strftime('%Y-%m-%d')
+                          start='2019-01-01',
+                        #   start='1993-01-01',
+                        #   end=datetime.today().strftime('%Y-%m-%d'),
                           )
               .xs(field_name, axis=1, level=0)
               .loc[:, tickers]
@@ -51,7 +52,6 @@ def get_yahoo_data_set(tickers: Iterable[str],
                             for asset_name, ticker in zip(asset_names, tickers)})
               .rename_axis(index='date', columns='factor_name'))
     return df
-
 
 
 def get_fred_data_set(
@@ -105,30 +105,21 @@ def get_lmxl_data_set(tickers: str | list[str],
     return df[tickers].rename(columns=ticker_to_factor_map)
 
 
-# # deprecated
-# def get_yf_data(asset_list: list[str]) -> xr.DataArray:
-#     # TODO: Name the returned datarray 'ohlcv'?
-#     df = (yf.download(asset_list, auto_adjust=False)
-#             .rename_axis(index='date', columns=['ohlcv_type', 'asset'])
-#             .rename(index={'Ticker': 'asset'})
-#             .rename(columns=lambda col: col.lower(), level='ohlcv_type')
-#             # .stack(['asset', 'ohlcv_type'], future_stack=True) # Convert assetst to categorical first
-#             .stack(['ohlcv_type'], future_stack=True)
-#             .loc[:, asset_list]
-#             )
-#     df.columns = pd.CategoricalIndex(df.columns, categories=asset_list, ordered=True)
-#     ds = df.stack().to_xarray()
-#     assert isinstance(ds, xr.DataArray), f"Expected DataArray, got {type(ds)}"
-#     return ds
-
-# # deprecated
-# def get_yf_returns(asset_list: list[str]) -> xr.Dataset:
-#     # TODO: Combine with get_factor_data
-#     ds = xr.Dataset()
-#     ds['ohlcv'] = get_yf_data(asset_list)
-#     ds['cret']  = ds['ohlcv'].sel(ohlcv_type='adj close')
-#     ds['ret']   = ds['cret'].ffill(dim='date').pipe(xr_pct_change, 'date')
-#     return ds
+# unused
+def get_yf_ohlcv(asset_list: list[str]) -> xr.DataArray:
+    # TODO: Name the returned datarray 'ohlcv'?
+    df = (yf.download(asset_list, auto_adjust=False)
+            .rename_axis(index='date', columns=['ohlcv_type', 'asset'])
+            .rename(index={'Ticker': 'asset'})
+            .rename(columns=lambda col: col.lower(), level='ohlcv_type')
+            # .stack(['asset', 'ohlcv_type'], future_stack=True) # Convert assetst to categorical first
+            .stack(['ohlcv_type'], future_stack=True)
+            .loc[:, asset_list]
+            )
+    df.columns = pd.CategoricalIndex(df.columns, categories=asset_list, ordered=True)
+    ds = df.stack().to_xarray()
+    assert isinstance(ds, xr.DataArray), f"Expected DataArray, got {type(ds)}"
+    return ds
 
 
 def get_portfolio_master(portfolios: dict):
