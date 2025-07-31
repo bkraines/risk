@@ -4,6 +4,7 @@ from typing import Optional, TypeVar, Literal
 from collections.abc import Mapping
 
 from numpy import sqrt, nan, diag
+import numpy as np
 import pandas as pd
 import xarray as xr
 
