@@ -13,6 +13,8 @@ from risk_config import REGIME_DICT
 def fill_returns(df):
     # Placeholder for more sophisticated logic
     # TODO: Don't fill sufficiently stale data
+    #       Perhaps use ffill's limit parameter
+    #
     return df.ffill()
 
 # Unused
@@ -55,6 +57,7 @@ def calculate_returns(cret: PandasObjectT,
                       ) -> PandasObjectT:
     match diffusion_type:
         case 'lognormal':
+            # FIXME: `pct_change` fails on empty pd.Series, like when yfinance donwload fails
             return cret.pct_change(periods).div(multiplier)
         case 'normal':
             return cret.diff(periods).div(multiplier)
@@ -168,10 +171,51 @@ def get_volatility_set(ret: xr.DataArray, halflifes: list[int], dim: str='date')
                      dim=pd.Index(halflifes, name='vol_type'))
 
 
+import numpy as np
+import xarray as xr
+from xarray_einstats import stats
+# from xarray_einstats.moving import ewm_meanvarcov
+
+# def get_ewm_corr_new(ret: xr.DataArray, halflife: int) -> xr.DataArray:
+#     """
+#     Compute exponentially weighted correlation using xarray-einstats.
+
+#     Parameters
+#     ----------
+#     ret : xr.DataArray
+#         Return data with dims ('time', 'factor').
+#     halflife : int
+#         Halflife in days for exponential weighting.
+
+#     Returns
+#     -------
+#     xr.DataArray
+#         Correlation array with dims ('time', 'factor', 'factor_1').
+#     """
+#     alpha = 1 - np.exp(-np.log(2) / halflife)
+
+#     # Compute EWM mean, var, cov
+#     ewm = stats.moving.ewm_meanvarcov(ret, dim='time', alpha=alpha)
+#     cov = ewm.covariance  # dims: ('time', 'factor', 'factor')
+
+#     # Compute std dev for normalization
+#     std = np.sqrt(xr.concat([ewm.variance.sel(factor=fac) for fac in ret.factor], dim='factor'))
+
+#     # Compute correlation
+#     denom = std.expand_dims(factor=ret.factor) * std.transpose('time', 'factor')
+#     corr = xr.where(denom != 0, cov / denom, 0.0)
+
+#     # Rename second factor dim for alignment with stacked output
+#     return corr.rename({'factor': 'factor', 'factor_1': 'factor_1'})
+
+
+# @profile
 def get_ewm_corr(ret: xr.DataArray, halflife: int) -> xr.DataArray:
     return (ret.to_pandas()
+            .astype(np.float32) # or normalize by stdev and go straight to 16-bit
             .ewm(halflife=halflife, min_periods=halflife*2)
-            .corr() # TODO: Try min_periods = halflife * 2
+            .corr()
+            .astype(np.float16)
             .rename_axis(columns=lambda name: f"{name}_1")
             .stack()
             .rename('corr')
