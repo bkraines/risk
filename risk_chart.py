@@ -17,7 +17,7 @@ from plotly.subplots import make_subplots
 
 from risk_config import IMAGE_DIR, VIX_COLORS
 from risk_data import get_factor_master
-from risk_stats import get_beta_pair, get_zscore
+from risk_stats import get_beta_pair, get_zscore, accumulate_returns
 
 # TODO: Share chart dimensions and template by extracting `fig_format_default` dict from `px_line`
 # TODO: Pull ploty template into a constant
@@ -56,7 +56,23 @@ def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotat
     return fig
 
 
-def px_line(da: xr.DataArray, x: str, y: str, color: Union[str, None] = None, title: Union[str, None] = None, 
+def px_line(data: pd.DataFrame | xr.DataArray, x: str, y: str, color: Union[str, None] = None, title: Union[str, None] = None, 
+            x_title: bool = False, y_title: bool = False, fig_format: Union[dict, None] = None) -> Figure:
+    # TODO: This should take a Series instead of a DataArray
+    fig_format_default = {'template': 'plotly_white', 'height': 500, 'width': 1000}
+    fig_format = {**fig_format_default, **(fig_format or {})}
+    if isinstance(data, xr.DataArray):
+        df = data.to_series().reset_index()
+    else:
+        df = data
+    fig = px.line(df, x=x, y=y, color=color, title=title, **fig_format)
+    fig = px_format(fig, x_title=x_title, y_title=y_title)
+    
+    return fig
+
+
+# Deprecated
+def px_line_old(da: xr.DataArray, x: str, y: str, color: Union[str, None] = None, title: Union[str, None] = None, 
             x_title: bool = False, y_title: bool = False, fig_format: Union[dict, None] = None) -> Figure:
     # TODO: This should take a Series instead of a DataArray
     fig_format_default = {'template': 'plotly_white', 'height': 500, 'width': 1000}
@@ -225,6 +241,11 @@ def draw_returns(ret: xr.DataArray, factor_name: str, factor_name_1: str) -> Fig
     return px_bar(da, title=f'Daily Returns of {factor_name} and {factor_name_1} (%)')
 
 
+def draw_return_diff(ret: xr.DataArray, factor_name: str, factor_name_1: str) -> Figure:
+    da = ret.sel(factor_name=factor_name) - ret.sel(factor_name=factor_name)
+    # da.cumsum
+    
+
 def draw_zscore(ret: xr.DataArray, vol: xr.DataArray, factor_name: str, factor_name_1: str, vol_type) -> Figure:
     ret = ret.sel(factor_name=[factor_name, factor_name_1])
     vol = vol.sel(factor_name=[factor_name, factor_name_1], vol_type=vol_type)
@@ -344,6 +365,7 @@ def format_corr_matrix(corr: pd.DataFrame) -> Styler:
 
 
 def draw_beta(factor_data: xr.Dataset, factor_name: str, factor_name_1: str) -> Figure:    
+    # TODO: Rename (factor_name, factor_name_1) to (factor_name_y, factor_name_x)
     # cov_type = zip(vol_type, corr_type)
     beta = get_beta_pair(factor_data.vol, factor_data.corr, factor_name, factor_name_1)
     ds = beta.dropna(dim='date')
@@ -364,6 +386,27 @@ def draw_volatility_ratio(vol: xr.DataArray, factor_name: str, factor_name_1: st
     ds = vol_ratio.dropna(dim='date')
     fig = px_line(ds, x='date', y='vol', color='vol_type', 
                   title=f'Volatility Ratio of {factor_name_1} to {factor_name}')
+    return fig
+
+
+def draw_excess_ret(factor_data: xr.Dataset, factor_name_y: str, factor_name_x: str) -> Figure:    
+    # TODO: Check numbers
+    # TODO: Extract excess returns calculation
+    # TODO: Reverse line layers (e.g. 21-day beta on top)
+    # TODO: Consider rescaling to x or y variable instead of 100
+    ret_x = factor_data.ret.sel(factor_name=factor_name_x)
+    ret_y = factor_data.ret.sel(factor_name=factor_name_y)
+    beta = get_beta_pair(factor_data.vol, factor_data.corr, factor_name_x, factor_name_y).dropna('date')
+    excess_ret = ret_y - beta.shift({'date': 1}) * ret_x
+
+    factor_master = get_factor_master(factor_data)
+    diffusion_type = factor_master.loc[factor_name_y, 'diffusion_type']
+    multiplier = factor_master.loc[factor_name_x, 'multiplier']
+    cumres = accumulate_returns(excess_ret.to_pandas(), diffusion_type=diffusion_type, level=100, multiplier=multiplier)
+    df = cumres.stack().rename('cumres').reset_index()
+    fig = (px_line(df, x='date', y='cumres', color='cov_type', 
+                   title=f'Return of {factor_name_y} in Excess of {factor_name_x}')
+           )
     return fig
 
 
