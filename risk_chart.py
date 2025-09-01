@@ -56,8 +56,22 @@ def px_format(fig: Figure, x_title: bool = False, y_title: bool = False, annotat
     return fig
 
 
+def reverse_layering(fig: Figure) -> Figure:
+    """
+    Reverses the drawing order of traces while preserving the original 
+    legend order and colors. The first trace in the legend will be drawn
+    on top of all other traces.
+    """
+    traces = list(fig.data)
+    fig.data = []
+    for trace in reversed(traces):
+        fig.add_trace(trace)
+    fig.update_layout(legend_traceorder="reversed")
+    return fig
+
+
 def px_line(data: pd.DataFrame | xr.DataArray, x: str, y: str, color: Union[str, None] = None, title: Union[str, None] = None, 
-            x_title: bool = False, y_title: bool = False, fig_format: Union[dict, None] = None) -> Figure:
+            x_title: bool = False, y_title: bool = False, fig_format: Union[dict, None] = None, first_on_top=False) -> Figure:
     # TODO: This should take a Series instead of a DataArray
     fig_format_default = {'template': 'plotly_white', 'height': 500, 'width': 1000}
     fig_format = {**fig_format_default, **(fig_format or {})}
@@ -67,7 +81,8 @@ def px_line(data: pd.DataFrame | xr.DataArray, x: str, y: str, color: Union[str,
         df = data
     fig = px.line(df, x=x, y=y, color=color, title=title, **fig_format)
     fig = px_format(fig, x_title=x_title, y_title=y_title)
-    
+    if first_on_top:
+        fig = reverse_layering(fig)
     return fig
 
 
@@ -389,10 +404,9 @@ def draw_volatility_ratio(vol: xr.DataArray, factor_name: str, factor_name_1: st
     return fig
 
 
-def draw_excess_ret(factor_data: xr.Dataset, factor_name_y: str, factor_name_x: str) -> Figure:    
+def draw_excess_ret(factor_data: xr.Dataset, factor_name_y: str, factor_name_x: str, first_on_top=True) -> Figure:    
     # TODO: Check numbers
     # TODO: Extract excess returns calculation
-    # TODO: Reverse line layers (e.g. 21-day beta on top)
     # TODO: Consider rescaling to x or y variable instead of 100
     ret_x = factor_data.ret.sel(factor_name=factor_name_x)
     ret_y = factor_data.ret.sel(factor_name=factor_name_y)
@@ -403,11 +417,13 @@ def draw_excess_ret(factor_data: xr.Dataset, factor_name_y: str, factor_name_x: 
     diffusion_type = factor_master.loc[factor_name_y, 'diffusion_type']
     multiplier = factor_master.loc[factor_name_x, 'multiplier']
     cumres = accumulate_returns(excess_ret.to_pandas(), diffusion_type=diffusion_type, level=100, multiplier=multiplier)
+    
     df = cumres.stack().rename('cumres').reset_index()
     fig = (px_line(df, x='date', y='cumres', color='cov_type', 
-                   title=f'Return of {factor_name_y} in Excess of {factor_name_x}')
+                   title=f'Return of {factor_name_y} in Excess of {factor_name_x}', first_on_top=first_on_top)
            )
     return fig
+
 
 
 def draw_distance_from_ma(dist_ma: xr.DataArray, factor_name: str, factor_name_1: str, window: int = 200) -> Figure:
