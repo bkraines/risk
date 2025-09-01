@@ -50,47 +50,47 @@ def build_dashboard(factor_data):
             'qqplot':    draw_zscore_qq(ds.ret, ds.vol, [(factor_1, vol_type), (factor_2, vol_type)]),
             }
     
-    fig_options = (
-           {'cret':      lambda: draw_cumulative_return(ds.cret, factor_name=factor_1, factor_name_1=factor_2),
-            'excess':    lambda: draw_excess_ret(ds, factor_name_y=factor_1, factor_name_x=factor_2),
-            'ret':       lambda: draw_returns(ds.ret, factor_name=factor_1, factor_name_1=factor_2),
-            'zscore':    lambda: draw_zscore(ds.ret, ds.vol, factor_name=factor_1, factor_name_1=factor_2, vol_type=vol_type),
-            'dist_ma':   lambda: draw_distance_from_ma(ds.dist_ma, factor_name=factor_1, factor_name_1=factor_2, window=ma_type),
-            'days_ma':   lambda: draw_days_from_ma(ds.days_ma, factor_name=factor_1, factor_name_1=factor_2, window=ma_type, vol_type=vol_type),
-            'corr':      lambda: draw_correlation(ds.corr, factor_name=factor_1, factor_name_1=factor_2, corr_type=HALFLIFES),
-            'beta':      lambda: draw_beta(ds, factor_name=factor_1, factor_name_1=factor_2),
-            'vol_1':     lambda: draw_volatility(ds.vol, factor_name=factor_1, vol_type=HALFLIFES),
-            'vol_2':     lambda: draw_volatility(ds.vol, factor_name=factor_2, vol_type=HALFLIFES),
-            'vol_ratio': lambda: draw_volatility_ratio(ds.vol, factor_name=factor_1, factor_name_1=factor_2, vol_type=HALFLIFES),
-            'qqplot':    lambda: draw_zscore_qq(ds.ret, ds.vol, [(factor_1, vol_type), (factor_2, vol_type)]),
-            })
+    # fig_options = (
+    #        {'cret':      lambda: draw_cumulative_return(ds.cret, factor_name=factor_1, factor_name_1=factor_2),
+    #         'excess':    lambda: draw_excess_ret(ds, factor_name_y=factor_1, factor_name_x=factor_2),
+    #         'ret':       lambda: draw_returns(ds.ret, factor_name=factor_1, factor_name_1=factor_2),
+    #         'zscore':    lambda: draw_zscore(ds.ret, ds.vol, factor_name=factor_1, factor_name_1=factor_2, vol_type=vol_type),
+    #         'dist_ma':   lambda: draw_distance_from_ma(ds.dist_ma, factor_name=factor_1, factor_name_1=factor_2, window=ma_type),
+    #         'days_ma':   lambda: draw_days_from_ma(ds.days_ma, factor_name=factor_1, factor_name_1=factor_2, window=ma_type, vol_type=vol_type),
+    #         'corr':      lambda: draw_correlation(ds.corr, factor_name=factor_1, factor_name_1=factor_2, corr_type=HALFLIFES),
+    #         'beta':      lambda: draw_beta(ds, factor_name=factor_1, factor_name_1=factor_2),
+    #         'vol_1':     lambda: draw_volatility(ds.vol, factor_name=factor_1, vol_type=HALFLIFES),
+    #         'vol_2':     lambda: draw_volatility(ds.vol, factor_name=factor_2, vol_type=HALFLIFES),
+    #         'vol_ratio': lambda: draw_volatility_ratio(ds.vol, factor_name=factor_1, factor_name_1=factor_2, vol_type=HALFLIFES),
+    #         'qqplot':    lambda: draw_zscore_qq(ds.ret, ds.vol, [(factor_1, vol_type), (factor_2, vol_type)]),
+    #         })
 
     
-    with st.sidebar:
-        st.markdown("""
-                <style>
-                /* Target only multiselect component input borders on focus */
-                div[data-baseweb="select"] .css-1pahdxg-control {
-                    border-color: #cccccc !important;
-                    box-shadow: 0 0 0 1px #cccccc !important;
-                }
+    # with st.sidebar:
+    #     st.markdown("""
+    #             <style>
+    #             /* Target only multiselect component input borders on focus */
+    #             div[data-baseweb="select"] .css-1pahdxg-control {
+    #                 border-color: #cccccc !important;
+    #                 box-shadow: 0 0 0 1px #cccccc !important;
+    #             }
         
-                /* Target hovered options in dropdown */
-                div[data-baseweb="select"] .css-1n7v3ny-option:hover {
-                    background-color: #f0f0f0 !important;
-                    color: black !important;
-                }
+    #             /* Target hovered options in dropdown */
+    #             div[data-baseweb="select"] .css-1n7v3ny-option:hover {
+    #                 background-color: #f0f0f0 !important;
+    #                 color: black !important;
+    #             }
         
-                /* Selected tag background color */
-                div[data-baseweb="select"] .css-1rhbuit-multiValue {
-                    background-color: #e0e0e0 !important;
-                    color: black !important;
-                }
-                </style>
-                """, 
-                unsafe_allow_html=True)
+    #             /* Selected tag background color */
+    #             div[data-baseweb="select"] .css-1rhbuit-multiValue {
+    #                 background-color: #e0e0e0 !important;
+    #                 color: black !important;
+    #             }
+    #             </style>
+    #             """, 
+    #             unsafe_allow_html=True)
 
-        st.multiselect(label='Charts to View', options=fig_options.keys(), default=fig_options.keys())
+    #     st.multiselect(label='Charts to View', options=fig_options.keys(), default=fig_options.keys())
 
     # regime_fig_list = ['cret', 'ret', 'zscore', 'dist_ma', 'days_ma']
     regime_fig_list = remove_items_from_list(figs.keys(), ['qqplot'])
