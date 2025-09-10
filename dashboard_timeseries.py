@@ -22,9 +22,10 @@ def build_dashboard(factor_data):
         regime_shading = st.toggle('VIX Regime Shading', value=False)
         
         col3, col4 = st.columns([1, 1])
+        beta: float = col3.number_input('Beta', value=1.0, step=0.01) #, format="%.2f" )
         vol_type = col3.selectbox('Volatility Halflife', options=HALFLIFES, index=0)
         ma_type: int = col4.number_input("Moving Average Window", value=200, min_value=1, step=20, format="%d")
-        beta: float = col1.number_input('Beta', value=1)
+        
 
     # Moving average must be computed before the date sliced
     # Can compute here or in `get_factor_data`
