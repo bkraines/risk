@@ -4,7 +4,7 @@ from risk_config import HALFLIFES, VIX_COLORS
 from risk_util import remove_items_from_list
 from risk_stats import get_dist_ma_set, get_days_ma_set, get_vix_regime, summarize_regime
 from risk_data import get_factor_data
-from risk_chart import draw_volatility, draw_correlation, draw_excess_ret, draw_cumulative_return, draw_volatility_ratio, draw_beta, draw_returns, draw_zscore, draw_distance_from_ma, draw_days_from_ma, draw_zscore_qq, add_regime_shading
+from risk_chart import draw_volatility, draw_correlation, draw_excess_returns, draw_excess_returns_beta1, draw_cumulative_return, draw_volatility_ratio, draw_beta, draw_returns, draw_zscore, draw_distance_from_ma, draw_days_from_ma, draw_zscore_qq, add_regime_shading
 from dashboard_interface import add_sidebar_defaults, select_date_window
 
 
@@ -24,6 +24,7 @@ def build_dashboard(factor_data):
         col3, col4 = st.columns([1, 1])
         vol_type = col3.selectbox('Volatility Halflife', options=HALFLIFES, index=0)
         ma_type: int = col4.number_input("Moving Average Window", value=200, min_value=1, step=20, format="%d")
+        beta: float = col1.number_input('Beta', value=1)
 
     # Moving average must be computed before the date sliced
     # Can compute here or in `get_factor_data`
@@ -37,7 +38,8 @@ def build_dashboard(factor_data):
         ds = factor_data.sel(date=slice(start_date_common, None))
     
     figs = {'cret':      draw_cumulative_return(ds.cret, factor_name=factor_1, factor_name_1=factor_2),
-            'excess':    draw_excess_ret(ds, factor_name_y=factor_2, factor_name_x=factor_1),
+            'excess':    draw_excess_returns(ds, factor_name_y=factor_2, factor_name_x=factor_1),
+            'excess_beta1':    draw_excess_returns_beta1(ds, factor_name_y=factor_2, factor_name_x=factor_1, beta=beta),
             'ret':       draw_returns(ds.ret, factor_name=factor_1, factor_name_1=factor_2),
             'zscore':    draw_zscore(ds.ret, ds.vol, factor_name=factor_1, factor_name_1=factor_2, vol_type=vol_type),
             'dist_ma':   draw_distance_from_ma(ds.dist_ma, factor_name=factor_1, factor_name_1=factor_2, window=ma_type),

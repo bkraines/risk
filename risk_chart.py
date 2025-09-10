@@ -404,9 +404,31 @@ def draw_volatility_ratio(vol: xr.DataArray, factor_name: str, factor_name_1: st
     return fig
 
 
-def draw_excess_ret(factor_data: xr.Dataset, factor_name_y: str, factor_name_x: str, first_on_top=True) -> Figure:    
+def draw_excess_returns_beta1(factor_data: xr.Dataset, factor_name_y: str, factor_name_x: str, beta=1, first_on_top=True) -> Figure:
+    ret_x = factor_data.ret.sel(factor_name=factor_name_x)
+    ret_y = factor_data.ret.sel(factor_name=factor_name_y)    
+    excess_ret = ret_y - beta * ret_x
+
+    factor_master = get_factor_master(factor_data)
+    diffusion_type = factor_master.loc[factor_name_y, 'diffusion_type']
+    multiplier = factor_master.loc[factor_name_x, 'multiplier']
+    cumres = accumulate_returns(excess_ret.to_pandas(), diffusion_type=diffusion_type, level=100, multiplier=multiplier)
+    
+    # df = cumres.stack().rename('cumres').reset_index()
+    df = cumres.rename('cumres').reset_index()
+    fig = (px_line(df, x='date', y='cumres', 
+                   title=f'Return of {factor_name_y} in Excess of {factor_name_x} (beta={beta})', first_on_top=first_on_top)
+           )
+    return fig
+
+
+def draw_excess_returns(factor_data: xr.Dataset, factor_name_y: str, factor_name_x: str, first_on_top=True) -> Figure:    
     # TODO: Check numbers
-    # TODO: Extract excess returns calculation
+    # TODO: Extract excess returns calculation:
+    #       Add calculate_excess_returns to `risk_stats.py` that takes 
+    #       the return DataArray and any subset of the beta DataArray
+    #       and returns the available returns. 
+    # Perhaps call from charting functions instead of adding to factor_data.
     # TODO: Consider rescaling to x or y variable instead of 100
     ret_x = factor_data.ret.sel(factor_name=factor_name_x)
     ret_y = factor_data.ret.sel(factor_name=factor_name_y)
