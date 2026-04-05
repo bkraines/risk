@@ -1,11 +1,12 @@
 psutil
 # ipython
 numpy
-pandas
+pandas<2.0 # Pinned to avoid conflict with pandas-datareader
 openpyxl
 # jinja2
 xarray
 numbagg
+xarray-einstats-0.9.1
 scikit-learn
 matplotlib
 plotly
