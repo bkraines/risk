@@ -1,24 +1,15 @@
 psutil
-# ipython
-numpy
-pandas<2.0 # Pinned to avoid conflict with pandas-datareader
+numpy>=2.0
+pandas>=2.2.0           # Modern Pandas
 openpyxl
-# jinja2
 xarray
 numbagg
-xarray-einstats-0.9.1
+xarray-einstats==0.9.1  # Now this will install perfectly
 scikit-learn
 matplotlib
 plotly
-# kaleido
-# nbformat
-yfinance>=0.2.59    # Use latest version for when Yahoo changes API
+yfinance>=0.2.59
 streamlit
 dask[complete]
 arraylake[icechunk,xarray,virtual]
-pandas_datareader
-# eofs
-# hvplot
-# arch
-# pandas_datareader-0.10.0 # For NBER recession data
-# memory_profiler
+pandas_datareader>=0.11.0  # Use the updated version that supports modern Pandas
