@@ -1,10 +1,10 @@
 psutil
 numpy>=2.0
-pandas>=2.2.0           # Modern Pandas
+pandas>=2.2.0,<3.0    # Cap at 2.2.x; Pandas 3.0 is too new for datareader
 openpyxl
 xarray
 numbagg
-xarray-einstats==0.9.1  # Now this will install perfectly
+xarray-einstats==0.9.1
 scikit-learn
 matplotlib
 plotly
@@ -12,4 +12,4 @@ yfinance>=0.2.59
 streamlit
 dask[complete]
 arraylake[icechunk,xarray,virtual]
-pandas_datareader>=0.11.0  # Use the updated version that supports modern Pandas
+pandas_datareader==0.10.0
