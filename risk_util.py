@@ -4,6 +4,7 @@ import os
 from io import StringIO
 from pathlib import Path
 import datetime
+from zoneinfo import ZoneInfo
 
 import psutil
 import pickle
@@ -14,7 +15,7 @@ import streamlit as st
 
 PandasObject = TypeVar('PandasObject', pd.DataFrame, pd.Series)
 
-from risk_config import CACHE_DIR, ARRAYLAKE_REPO
+from risk_config import CACHE_DIR, ARRAYLAKE_REPO, LOCAL_TIMEZONE
 # print("--- Loading risk_lib.util ---")
 
 # TODO: Move caching functions to `risk_cache.py` or `risk_util_cache.py`
@@ -345,7 +346,10 @@ def move_columns_to_front(df: pd.DataFrame, column_names: list[str]) -> pd.DataF
 #     pass
 # print("--- Finished loading risk_lib.util ---")
 
-def get_directory_last_updated_time(path: str | Path) -> datetime.datetime:
+def get_directory_last_updated_time(
+    path: str | Path,
+    timezone: str | datetime.tzinfo = LOCAL_TIMEZONE,
+) -> datetime.datetime:
     """
     Get the most recent modification time from all files in a directory and its subdirectories.
 
@@ -369,7 +373,10 @@ def get_directory_last_updated_time(path: str | Path) -> datetime.datetime:
         if f.is_file()
     )
 
-    return datetime.datetime.fromtimestamp(latest_mtime)
+    last_updated_utc = datetime.datetime.fromtimestamp(latest_mtime, tz=datetime.timezone.utc)
+    if isinstance(timezone, str):
+        timezone = ZoneInfo(timezone)
+    return last_updated_utc.astimezone(timezone)
 
 
 def is_sorted(date_list):

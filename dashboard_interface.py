@@ -3,7 +3,7 @@ from typing import Iterable, Optional
 import streamlit as st
 
 import os
-from risk_data import get_factor_data
+from risk_data import get_cache_freshness_warning, get_disk_cache_market_data_through, get_factor_data
 from risk_dates import build_window_map
 from risk_util import check_memory_usage, summarize_memory_usage, get_directory_last_updated_time
 from risk_config import CACHE_TARGET, CACHE_DIR, CACHE_FILENAME, HISTORICAL_WINDOWS, ROLLING_WINDOWS
@@ -17,8 +17,18 @@ def force_data_refresh():
                 get_factor_data(read_cache=False)
         st.write(f'Cache target: {CACHE_TARGET}')
         if CACHE_TARGET == 'disk':
-            last_updated = get_directory_last_updated_time(os.path.join(CACHE_DIR, CACHE_FILENAME))
-            st.write(f'Last updated: {last_updated:%Y-%m-%d %H:%M:%S}')
+            cache_path = os.path.join(CACHE_DIR, CACHE_FILENAME)
+            last_updated = get_directory_last_updated_time(cache_path)
+            timezone_name = last_updated.tzname() or ''
+            st.write(f'Cache last updated: {last_updated:%Y-%m-%d %H:%M:%S} {timezone_name}')
+
+            market_data_through = get_disk_cache_market_data_through()
+            if market_data_through is not None:
+                st.write(f'Market data through: {market_data_through:%Y-%m-%d}')
+
+            cache_freshness_warning = get_cache_freshness_warning()
+            if cache_freshness_warning:
+                st.warning(cache_freshness_warning)
 
 
 def display_memory_usage():

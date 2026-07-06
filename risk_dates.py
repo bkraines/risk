@@ -13,7 +13,7 @@ def format_date(date_str):
 def business_days_ago(n=1, current_date=None):
     if current_date is None:
         current_date = pd.Timestamp.today()
-    return (pd.Timestamp.today() - BDay(n)).date()
+    return (pd.Timestamp(current_date) - BDay(n)).date()
 
 
 def latest_business_day(date=None):

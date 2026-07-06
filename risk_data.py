@@ -1,19 +1,34 @@
 # from memory_profiler import profile
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
-from datetime import datetime
+from datetime import date, datetime
+import logging
+import os
 import pandas as pd
 import xarray as xr
 
 import yfinance as yf
 import pandas_datareader.data as pdr
 
-from risk_config import CACHE_TARGET, HALFLIFES, CACHE_FILENAME, FACTOR_FILENAME, FACTOR_DIR, FACTOR_SET
+from risk_config import (
+    CACHE_DIR,
+    CACHE_FILENAME,
+    CACHE_STALENESS_PROBE_FACTORS,
+    CACHE_TARGET,
+    FACTOR_DIR,
+    FACTOR_FILENAME,
+    FACTOR_SET,
+    HALFLIFES,
+    LOCAL_TIMEZONE,
+)
 from risk_config_port import PORTFOLIOS
 from risk_dates import business_days_ago #, latest_business_day
-from risk_util import safe_reindex, cache, convert_df_to_json, trim_leading_zeros
+from risk_util import safe_reindex, cache, convert_df_to_json, get_directory_last_updated_time, trim_leading_zeros
 from risk_stats import align_dates, calculate_returns_set, get_statistics_set, smart_dot
 from risk_portfolios import build_all_portfolios, portfolio_weights_to_xarray
+
+LOGGER = logging.getLogger(__name__)
+_CACHE_FRESHNESS_WARNING: Optional[str] = None
 
 
 def get_yahoo_data(ticker, field_name, auto_adjust: bool = True) -> pd.Series:
@@ -199,9 +214,148 @@ def get_factor_composites(file_name: str = FACTOR_FILENAME, file_dir = FACTOR_DI
             )
 
 
+def _set_cache_freshness_warning(message: Optional[str] = None) -> None:
+    global _CACHE_FRESHNESS_WARNING
+    _CACHE_FRESHNESS_WARNING = message
+
+
+def get_cache_freshness_warning() -> Optional[str]:
+    return _CACHE_FRESHNESS_WARNING
+
+
+def get_cache_path(cache_dir: str = CACHE_DIR, cache_file: str = CACHE_FILENAME) -> str:
+    return os.path.join(cache_dir, cache_file)
+
+
+def get_dataset_latest_date(ds: xr.Dataset) -> date:
+    return pd.Timestamp(ds.indexes['date'].max()).date()
+
+
+def get_disk_cache_market_data_through(
+    cache_dir: str = CACHE_DIR,
+    cache_file: str = CACHE_FILENAME,
+) -> Optional[date]:
+    cache_path = get_cache_path(cache_dir, cache_file)
+    if not os.path.exists(cache_path):
+        return None
+
+    ds = xr.open_zarr(cache_path)
+    try:
+        return get_dataset_latest_date(ds)
+    finally:
+        ds.close()
+
+
+def _as_local_timestamp(
+    current_time: Optional[date | datetime | pd.Timestamp],
+    local_timezone: str = LOCAL_TIMEZONE,
+) -> pd.Timestamp:
+    if current_time is None:
+        return pd.Timestamp.now(tz=local_timezone)
+
+    timestamp = pd.Timestamp(current_time)
+    if timestamp.tzinfo is None:
+        return timestamp.tz_localize(local_timezone)
+    return timestamp.tz_convert(local_timezone)
+
+
+def is_cache_mtime_recent(
+    cache_path: str,
+    current_time: Optional[date | datetime | pd.Timestamp] = None,
+    local_timezone: str = LOCAL_TIMEZONE,
+) -> bool:
+    cache_last_updated_local = get_directory_last_updated_time(cache_path, timezone=local_timezone)
+    current_time_local = _as_local_timestamp(current_time, local_timezone)
+    date_prior = business_days_ago(1, current_date=current_time_local)
+    return cache_last_updated_local.date() >= date_prior
+
+
+def _extract_close_prices(downloaded_data: pd.DataFrame | pd.Series, probe_factors: list[str]) -> pd.DataFrame:
+    if isinstance(downloaded_data, pd.Series):
+        return downloaded_data.to_frame(probe_factors[0])
+
+    if isinstance(downloaded_data.columns, pd.MultiIndex):
+        for level in range(downloaded_data.columns.nlevels):
+            if 'Close' in downloaded_data.columns.get_level_values(level):
+                return downloaded_data.xs('Close', axis=1, level=level)
+        raise KeyError("Downloaded data does not contain a Close field")
+
+    if 'Close' in downloaded_data.columns:
+        close_prices = downloaded_data['Close']
+        if isinstance(close_prices, pd.Series):
+            return close_prices.to_frame(probe_factors[0])
+        return close_prices
+
+    if len(probe_factors) == 1 and len(downloaded_data.columns) == 1:
+        return downloaded_data.rename(columns={downloaded_data.columns[0]: probe_factors[0]})
+
+    raise KeyError("Downloaded data does not contain a Close field")
+
+
+def get_latest_market_data_date(
+    probe_factors: Iterable[str] = CACHE_STALENESS_PROBE_FACTORS,
+    period: str = '10d',
+) -> date:
+    probe_factors = list(probe_factors)
+    if not probe_factors:
+        raise ValueError("At least one staleness probe factor is required")
+
+    downloaded_data = yf.download(
+        probe_factors,
+        period=period,
+        auto_adjust=True,
+        progress=False,
+    )
+    close_prices = _extract_close_prices(downloaded_data, probe_factors)
+    complete_close_prices = close_prices.dropna(how='any')
+    if complete_close_prices.empty:
+        raise ValueError(f"No complete Close data found for {probe_factors}")
+
+    return pd.Timestamp(complete_close_prices.index.max()).date()
+
+
+def is_disk_cache_current(
+    ds: xr.Dataset,
+    cache_dir: str = CACHE_DIR,
+    cache_file: str = CACHE_FILENAME,
+    cache_path: Optional[str] = None,
+    current_time: Optional[date | datetime | pd.Timestamp] = None,
+    local_timezone: str = LOCAL_TIMEZONE,
+    probe_latest_date_func: Optional[Callable[[], date | datetime | pd.Timestamp | None]] = None,
+) -> bool:
+    _set_cache_freshness_warning()
+
+    if cache_path is None:
+        cache_path = get_cache_path(cache_dir, cache_file)
+
+    if is_cache_mtime_recent(cache_path, current_time=current_time, local_timezone=local_timezone):
+        return True
+
+    if probe_latest_date_func is None:
+        probe_latest_date_func = get_latest_market_data_date
+
+    try:
+        probe_latest_date = probe_latest_date_func()
+    except Exception as exc:
+        warning = f"Cache freshness could not be checked against market data; using cached data. ({exc})"
+        LOGGER.warning(warning)
+        _set_cache_freshness_warning(warning)
+        return True
+
+    if probe_latest_date is None:
+        warning = "Cache freshness could not be checked against market data; using cached data."
+        LOGGER.warning(warning)
+        _set_cache_freshness_warning(warning)
+        return True
+
+    cached_latest_date = get_dataset_latest_date(ds)
+    probe_latest_date = pd.Timestamp(probe_latest_date).date()
+    return cached_latest_date >= probe_latest_date
+
+
 def is_data_current(ds: xr.Dataset) -> bool:
     # TODO: If latest_date is a weekend, this will always return False
-    date_latest = ds.indexes['date'].max().date()
+    date_latest = get_dataset_latest_date(ds)
     date_prior  = business_days_ago(1)
     return date_latest >= date_prior
 
@@ -298,9 +452,13 @@ def get_factor_data(**kwargs) -> xr.Dataset:
     kwargs.setdefault("halflifes", HALFLIFES)
     match CACHE_TARGET:
         case 'disk':
-            kwargs.setdefault("check", is_data_current)
+            cache_dir = kwargs.setdefault("cache_dir", CACHE_DIR)
+            cache_file = kwargs.setdefault("cache_file", CACHE_FILENAME)
+            kwargs.setdefault(
+                "check",
+                lambda ds: is_disk_cache_current(ds, cache_dir=cache_dir, cache_file=cache_file),
+            )
             kwargs.setdefault("file_type", "zarr")
-            kwargs.setdefault("cache_file", CACHE_FILENAME)
         case 'arraylake':
             kwargs.setdefault("check", is_data_current)
     return build_factor_data(**kwargs)

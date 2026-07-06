@@ -6,6 +6,8 @@ from numpy import inf
 IMAGE_DIR = 'images'
 CACHE_DIR = 'cache'
 CACHE_FILENAME = 'factor_data.zarr'
+LOCAL_TIMEZONE = 'America/New_York'
+CACHE_STALENESS_PROBE_FACTORS = ['SPY']
 ARRAYLAKE_REPO = 'finance-demos/demo-icechunk'
 FACTOR_DIR = 'risk_lib'
 FACTOR_FILENAME = 'factor_master.xlsx'
