@@ -80,6 +80,11 @@ VIX_COLORS = {
 }
 
 EVENT_STUDIES = {
+    'Iran and Ukraine Wars':
+        [('USO',  '2026-02-28'),
+         ('USO',  '2022-02-24'),
+         ('SPY',  '2026-02-28'),
+         ('SPY',  '2022-02-24')],
     'Trade War — VIX selloff':    
         [('SPY',  '2018-01-24'), # Align first VIX selloff
          ('SPY',  '2025-02-15')],
