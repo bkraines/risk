@@ -2,6 +2,7 @@ from typing import Union, Literal, Optional
 from plotly.graph_objects import Figure
 
 from numpy import sqrt, cos, sin, arctan2, array
+import numpy as np
 import pandas as pd
 import xarray as xr
 xr.set_options(keep_attrs=True,
@@ -43,6 +44,8 @@ def transform_coordinates(coordinates: pd.DataFrame, transformation_type=None, f
         return coordinates
     if coordinates_initial is None:
         coordinates_initial = coordinates
+    if factor not in coordinates.index and transformation_type in ('rotate', 'rotate_initial', 'normalize'):
+        return coordinates
     
     match transformation_type:
         case 'rotate':
@@ -70,15 +73,70 @@ def transform_coordinates(coordinates: pd.DataFrame, transformation_type=None, f
                 factor_list = ['SPY', 'TLT']
             
             for factor in factor_list:
+                if factor not in coordinates.index:
+                    continue
                 v = coordinates.loc[factor]
                 x, y = v
                 thetas[factor] = arctan2(y, x)
+            if not thetas:
+                return coordinates
             theta_avg = sum(thetas.values()) / len(thetas)
             return coordinates.pipe(rotate, -theta_avg)
 
         case _:
             return coordinates
         
+
+
+def _date_label(date) -> str:
+    return str(pd.Timestamp(date).date())
+
+
+def normalize_mds_dates(dates) -> np.ndarray:
+    return pd.to_datetime(dates).to_numpy()
+
+
+def find_bad_mds_factors(corr: xr.DataArray, dates, corr_type=63) -> pd.DataFrame:
+    bad_factors = {}
+    dates = normalize_mds_dates(dates)
+
+    for date in dates:
+        df = corr.sel(date=date, corr_type=corr_type, method='nearest').to_pandas()
+        bad_cells = ~np.isfinite(df)
+        factors = []
+
+        while bad_cells.to_numpy().any():
+            bad_counts = bad_cells.sum(axis=1).add(bad_cells.sum(axis=0), fill_value=0)
+            factor = bad_counts.sort_values(ascending=False).index[0]
+            factors.append(factor)
+            bad_cells = bad_cells.drop(index=factor, columns=factor)
+
+        for factor in factors:
+            bad_factor = bad_factors.setdefault(
+                factor,
+                {'first_bad_date': _date_label(date), 'bad_date_count': 0},
+            )
+            bad_factor['bad_date_count'] += 1
+
+    if not bad_factors:
+        return pd.DataFrame(columns=['factor_name', 'first_bad_date', 'bad_date_count', 'reason'])
+
+    return (pd.DataFrame.from_dict(bad_factors, orient='index')
+            .rename_axis('factor_name')
+            .reset_index()
+            .assign(reason='missing_or_nonfinite_correlation')
+            .sort_values(['first_bad_date', 'factor_name'])
+            .reset_index(drop=True))
+
+
+def drop_mds_factors(corr: xr.DataArray, factors) -> xr.DataArray:
+    factors = list(factors)
+    if not factors:
+        return corr
+
+    factor_names = [factor for factor in factors if factor in corr.indexes['factor_name']]
+    factor_names_1 = [factor for factor in factors if factor in corr.indexes['factor_name_1']]
+    return corr.drop_sel(factor_name=factor_names, factor_name_1=factor_names_1)
 
 
 def multidimensional_scaling(correlation_matrix: pd.DataFrame, init=None, random_state=42, n_init=4) -> pd.DataFrame:
@@ -118,10 +176,13 @@ def multidimensional_scaling(correlation_matrix: pd.DataFrame, init=None, random
                         columns=pd.Index(['dim1', 'dim2'], name='dimension'))
 
 
-def mds_ts_df(corr: xr.DataArray, start_date=None, transformation=None, factor='SPY', corr_type=63, **kwargs) -> pd.DataFrame:
+def mds_ts_df(corr: xr.DataArray, start_date=None, dates=None, transformation=None, factor='SPY', corr_type=63, **kwargs) -> pd.DataFrame:
     # TODO: Factor out corr_type
 
-    dates = corr.sel(date=slice(start_date, None)).date.values
+    if dates is None:
+        dates = corr.sel(date=slice(start_date, None)).date.values
+    else:
+        dates = normalize_mds_dates(dates)
     # coordinates = None
     transformed = None
     coordinates = None
@@ -273,7 +334,7 @@ def get_marker_size(ds):
     return df['marker_size'] #, 'marker_symbol']]
 
 
-def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_election=False, drop_portfolios=False, corr_type=None, **kwargs) -> Figure:
+def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, drop_composites=True, drop_election=False, drop_portfolios=False, corr_type=None, return_dropped_factors=False, **kwargs) -> Figure | tuple[Figure, pd.DataFrame]:
     # TODO: Include date and description in hovertext for scatter and whiskers
     # TODO: Pass in full dataset to extract corr, factor_master, and vol (for sizing)
     # TODO: Pass in a list of dates or take all dates from the dataarray
@@ -291,8 +352,14 @@ def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, dr
     factor_master = get_factor_master(ds)
     
     marker_size = get_marker_size(ds) #.rename('size')
+    if corr_type is None:
+        corr_type = 63
+
+    mds_dates = ds.date.values if animate else dates
+    dropped_factors = find_bad_mds_factors(ds.corr, mds_dates, corr_type=corr_type)
+    corr = drop_mds_factors(ds.corr, dropped_factors['factor_name'])
     
-    mds_ts = (mds_ts_df(ds.corr, transformation=transformation, start_date=start_date, corr_type=63, **kwargs)
+    mds_ts = (mds_ts_df(corr, transformation=transformation, start_date=start_date, dates=mds_dates, corr_type=corr_type, **kwargs)
                 .reset_index()
                 .join(factor_master, on='factor_name')
                 .assign(date = lambda df: df['date'].astype(str))
@@ -345,4 +412,7 @@ def run_mds(ds, transformation, dates, start_date, tick_range, animate=False, dr
     #     line_color='lightgray', line_width=.5,
     #     )
     
+    if return_dropped_factors:
+        return fig, dropped_factors
+
     return fig

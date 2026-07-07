@@ -1,7 +1,6 @@
 import streamlit as st
-from datetime import datetime
 from risk_config import HALFLIFES
-from risk_data import get_factor_data
+from risk_data import get_dataset_latest_date, get_factor_data
 from risk_corr_mds import run_mds
 from dashboard_interface import add_sidebar_defaults
 
@@ -17,10 +16,10 @@ def build_dashboard(factor_data):
     model_options = HALFLIFES
     model_default = model_options.index(63) if 63 in model_options else 0
     
-    default_date = datetime(2024, 11, 29)
     with st.sidebar:
         earliest_date = factor_data.indexes['date'].min().date()
-        latest_date   = factor_data.indexes['date'].max().date()
+        latest_date   = get_dataset_latest_date(factor_data)
+        default_date  = latest_date
         end_date      = st.date_input("End date", default_date, earliest_date, latest_date)
         corr_type     = st.selectbox('Correlation Halflife', options=model_options, index=model_default)
         animate       = st.toggle('Animate', value=False)
@@ -40,7 +39,7 @@ def build_dashboard(factor_data):
                  .astype('datetime64[D]').astype(str))
         start_date = dates[0]
     
-    fig = (run_mds(ds, 
+    fig, dropped_factors = (run_mds(ds, 
             transformation='rotate_initial', 
             dates=dates,
             start_date=start_date, 
@@ -50,9 +49,15 @@ def build_dashboard(factor_data):
             drop_election=not(election),
             drop_portfolios=not(portfolios),
             corr_type=corr_type,
+            return_dropped_factors=True,
             **args))
 
     st.write(fig)
+
+    if not dropped_factors.empty:
+        message = f"Dropped {len(dropped_factors)} factor(s) from MDS because of missing or non-finite correlations."
+        with st.expander(message):
+            st.dataframe(dropped_factors, use_container_width=True, hide_index=True)
 
     add_sidebar_defaults()
 
